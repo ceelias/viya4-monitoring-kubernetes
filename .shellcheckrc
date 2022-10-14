@@ -1,0 +1,4 @@
+# SC2148 = Disables error for files without ! which are meant to be sourced, not executed
+# SC2128 = Disables error for sourcing files with "../../"
+disable=SC2148,SC2128 # Disables error for files without ! which are meant to be sourced
+
