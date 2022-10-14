@@ -12,4 +12,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SHFMT_OPTS: -i 2 -ci -bn # arguments to shfmt.
         with:
-          sh_checker_comment: false
+          sh_checker_comment: true
