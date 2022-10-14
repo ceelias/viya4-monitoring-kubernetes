@@ -22,11 +22,9 @@ log_notice "Deploying logging components to the [$LOG_NS] namespace [$(date)]"
 log_info "STEP 1: Event Router"
 logging/bin/deploy_eventrouter.sh
 
-
 # Fluent Bit
 log_info "STEP 2: Deploying Fluent Bit"
 logging/bin/deploy_fluentbit_azmonitor.sh
-
 
 log_notice "The deployment of logging components has completed [$(date)]"
 echo ""

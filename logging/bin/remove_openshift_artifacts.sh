@@ -6,7 +6,7 @@
 cd "$(dirname $BASH_SOURCE)/../.."
 source logging/bin/common.sh
 
-this_script=`basename "$0"`
+this_script=$(basename "$0")
 
 log_debug "Script [$this_script] has started [$(date)]"
 
@@ -20,7 +20,6 @@ fi
 
 # remove custom OpenShift SCC
 oc delete scc v4mlogging --ignore-not-found
-
 
 log_info "OpenShift Prerequisites have been removed."
 

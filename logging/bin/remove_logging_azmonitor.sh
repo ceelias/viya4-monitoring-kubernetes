@@ -15,7 +15,6 @@ logging/bin/remove_fluentbit_azmonitor.sh
 log_info "Removing eventrouter..."
 logging/bin/remove_eventrouter.sh
 
-
 if [ "$LOG_DELETE_NAMESPACE_ON_REMOVE" == "true" ]; then
   log_info "Deleting the [$LOG_NS] namespace..."
   if kubectl delete namespace $LOG_NS --timeout $KUBE_NAMESPACE_DELETE_TIMEOUT; then
@@ -33,11 +32,10 @@ log_info "Waiting 60 sec for resources to terminate..."
 sleep 60
 
 log_info "Checking contents of the [$LOG_NS] namespace:"
-crds=( secrets all )
+crds=(secrets all)
 empty="true"
-for crd in "${crds[@]}"
-do
-	out=$(kubectl get -n $LOG_NS $crd 2>&1)
+for crd in "${crds[@]}"; do
+  out=$(kubectl get -n $LOG_NS $crd 2>&1)
   if [[ "$out" =~ 'No resources found' ]]; then
     :
   else
@@ -52,4 +50,3 @@ else
   log_warn "  The [$LOG_NS] namespace is not empty."
   log_warn "  Examine the resources above before deleting the namespace."
 fi
-

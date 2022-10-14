@@ -12,7 +12,7 @@ cd "$(dirname $BASH_SOURCE)/../.."
 source monitoring/bin/common.sh
 source bin/openshift-include.sh
 
-if [ "$OPENSHIFT_CLUSTER" == "true" ]; then  
+if [ "$OPENSHIFT_CLUSTER" == "true" ]; then
   if [ "${CHECK_OPENSHIFT_CLUSTER:-true}" == "true" ]; then
     log_error "This script should not be run on OpenShift clusters"
     log_error "Run monitoring/bin/remove_monitoring_openshift.sh instead"
@@ -41,7 +41,7 @@ cp -R monitoring/multitenant/* $tenantDir/
 # Replace placeholders
 log_debug "Replacing __TENANT__ for files in [$tenantDir]"
 for f in $(find $tenantDir -name '*.yaml'); do
-  if echo "$OSTYPE" | grep 'darwin' > /dev/null 2>&1; then
+  if echo "$OSTYPE" | grep 'darwin' >/dev/null 2>&1; then
     sed -i '' "s/__TENANT__/$VIYA_TENANT/g" $f
     sed -i '' "s/__TENANT_NS__/$VIYA_NS/g" $f
     sed -i '' "s/__MON_NS__/$MON_NS/g" $f

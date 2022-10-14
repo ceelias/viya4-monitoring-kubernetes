@@ -8,4 +8,3 @@ source logging/bin/common.sh
 
 log_error "This script is obsolete."
 log_error "Run logging/bin/deploy_logging.sh instead."
-

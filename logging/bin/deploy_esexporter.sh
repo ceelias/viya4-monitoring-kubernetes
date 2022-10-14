@@ -7,7 +7,7 @@ cd "$(dirname $BASH_SOURCE)/../.."
 source logging/bin/common.sh
 source logging/bin/secrets-include.sh
 
-this_script=`basename "$0"`
+this_script=$(basename "$0")
 
 log_debug "Script [$this_script] has started [$(date)]"
 
@@ -36,17 +36,19 @@ fi
 # get credentials
 get_credentials_from_secret metricgetter
 rc=$?
-if [ "$rc" != "0" ] ;then log_debug "RC=$rc"; exit $rc;fi
-
+if [ "$rc" != "0" ]; then
+  log_debug "RC=$rc"
+  exit $rc
+fi
 
 if helm3ReleaseExists es-exporter $LOG_NS; then
-   #remove an existing instance if it does NOT target OPENSEARCH (i.e. targets ODFE)
-   if [ -z $(kubectl -n $LOG_NS get pods -l "app=prometheus-elasticsearch-exporter,searchbackend=opensearch" -o name 2>/dev/null) ]; then
-      log_debug "Removing an outdated version of Helm release [es-exporter]"
-      helm -n $LOG_NS delete es-exporter
-   fi
+  #remove an existing instance if it does NOT target OPENSEARCH (i.e. targets ODFE)
+  if [ -z $(kubectl -n $LOG_NS get pods -l "app=prometheus-elasticsearch-exporter,searchbackend=opensearch" -o name 2>/dev/null) ]; then
+    log_debug "Removing an outdated version of Helm release [es-exporter]"
+    helm -n $LOG_NS delete es-exporter
+  fi
 else
-   log_debug "No existing Helm release [es-exporter] found."
+  log_debug "No existing Helm release [es-exporter] found."
 fi
 
 # enable debug on Helm via env var
@@ -71,7 +73,6 @@ if [ ! -f "$ES_OPEN_EXPORTER_USER_YAML" ]; then
   ES_OPEN_EXPORTER_USER_YAML=$TMP_DIR/empty.yaml
 fi
 
-
 # Enable workload node placement?
 LOG_NODE_PLACEMENT_ENABLE=${LOG_NODE_PLACEMENT_ENABLE:-${NODE_PLACEMENT_ENABLE:-false}}
 
@@ -83,7 +84,6 @@ else
   log_debug "Workload node placement support is disabled for the elasticsearch exporter"
   wnpValuesFile="$TMP_DIR/empty.yaml"
 fi
-
 
 # Point to OpenShift response file or dummy as appropriate
 if [ "$OPENSHIFT_CLUSTER" == "true" ]; then
@@ -98,13 +98,13 @@ fi
 helm2ReleaseCheck es-exporter-$LOG_NS
 
 helm $helmDebug upgrade --install es-exporter \
- --namespace $LOG_NS \
- -f $primaryValuesFile \
- -f $wnpValuesFile \
- -f $openshiftValuesFile \
- -f $ES_OPEN_EXPORTER_USER_YAML \
- prometheus-community/prometheus-elasticsearch-exporter \
- --set fullnameOverride=v4m-es-exporter
+  --namespace $LOG_NS \
+  -f $primaryValuesFile \
+  -f $wnpValuesFile \
+  -f $openshiftValuesFile \
+  -f $ES_OPEN_EXPORTER_USER_YAML \
+  prometheus-community/prometheus-elasticsearch-exporter \
+  --set fullnameOverride=v4m-es-exporter
 
 log_info "Elasticsearch metric exporter has been deployed"
 

@@ -67,7 +67,7 @@ PROM_OPERATOR_CRD_UPDATE=${PROM_OPERATOR_CRD_UPDATE:-true}
 PROM_OPERATOR_CRD_VERSION=${PROM_OPERATOR_CRD_VERSION:-v0.57.0}
 if [ "$PROM_OPERATOR_CRD_UPDATE" == "true" ]; then
   log_verbose "Updating Prometheus Operator custom resource definitions"
-  crds=( alertmanagerconfigs alertmanagers prometheuses prometheusrules podmonitors servicemonitors thanosrulers probes )
+  crds=(alertmanagerconfigs alertmanagers prometheuses prometheusrules podmonitors servicemonitors thanosrulers probes)
   for crd in "${crds[@]}"; do
     crdURL="https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$PROM_OPERATOR_CRD_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_$crd.yaml"
     if kubectl get crd $crd.monitoring.coreos.com 1>/dev/null 2>&1; then
@@ -93,7 +93,7 @@ fi
 # Optional TLS Support
 tlsValuesFile=$TMP_DIR/empty.yaml
 if [ "$TLS_ENABLE" == "true" ]; then
-  apps=( prometheus alertmanager grafana )
+  apps=(prometheus alertmanager grafana)
   create_tls_certs $MON_NS monitoring ${apps[@]}
 
   tlsValuesFile=monitoring/tls/values-prom-operator-tls.yaml
@@ -227,7 +227,7 @@ if [ "$LOGGING_DATASOURCE" == "true" ]; then
   log_debug "Creating the logging data source using the create_logging_datasource script"
   monitoring/bin/create_logging_datasource.sh
 
-  if (( $? == 1 )); then
+  if (($? == 1)); then
     log_warn "Unable to configure the logging data source at this time."
     log_warn "Please address the errors and re-run the follow command to create the data source at a later time:"
     log_warn "monitoring/bin/create_logging_datasource.sh"
@@ -246,7 +246,7 @@ set +e
 get_ingress_ports
 
 # get URLs for Grafana, Prometheus and AlertManager
-gf_url=$(get_service_url $MON_NS v4m-grafana  "false")
+gf_url=$(get_service_url $MON_NS v4m-grafana "false")
 # pr_url=$(get_url $MON_NS v4m-prometheus  "false")
 # am_url=$(get_url $MON_NS v4m-alertmanager  "false")
 set -e
@@ -265,13 +265,13 @@ fi
 log_notice ""
 log_notice "GRAFANA: "
 if [ ! -z "$gf_url" ]; then
-   log_notice "  $gf_url"
+  log_notice "  $gf_url"
 else
-   log_notice " It was not possible to determine the URL needed to access Grafana. Note  "
-   log_notice " that this is not necessarily a sign of a problem; it may only reflect an "
-   log_notice " ingress or network access configuration that this script does not handle."
+  log_notice " It was not possible to determine the URL needed to access Grafana. Note  "
+  log_notice " that this is not necessarily a sign of a problem; it may only reflect an "
+  log_notice " ingress or network access configuration that this script does not handle."
 fi
-   log_notice ""
+log_notice ""
 
 #log_notice ""
 #log_notice "================================================================================"
@@ -295,7 +295,7 @@ fi
 
 if [ "$showPass" == "true" ]; then
   # Find the grafana pod
- 
+
   log_notice " Generated Grafana admin password is: $grafanaPwd"
   log_notice " To change the password, run the following script (replace myNewPassword with an updated password):"
   log_notice " monitoring/bin/change_grafana_admin_password.sh -p myNewPassword"
@@ -303,5 +303,3 @@ fi
 
 log_message ""
 log_notice " Successfully deployed components to the [$MON_NS] namespace"
-
-

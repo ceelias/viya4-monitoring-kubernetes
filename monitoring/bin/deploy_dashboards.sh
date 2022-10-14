@@ -25,24 +25,24 @@ TEST_DASH="${TEST_DASH:-false}"
 DASH_BASE="${DASH_BASE:-monitoring/dashboards}"
 
 function deploy_dashboards {
-   type=$1
-   if [ -z "$2" ]; then
-     dir=$"$DASH_BASE/$type"
-   else
-     dir=$2
-   fi
-   
-   for f in $dir/*.json; do
-     # Need to check existence because if there are no matching files,
-     # f will include the wildcard character (*)
-     if [ -f "$f" ]; then
-       log_debug "Deploying dashboard from file [$f]"
-       name=$(basename $f .json)
-       
-       kubectl create cm -n $DASH_NS $name --dry-run=client --from-file $f -o yaml | kubectl apply -f -
-       kubectl label cm -n $DASH_NS $name --overwrite grafana_dashboard=1 sas.com/monitoring-base=kube-viya-monitoring sas.com/dashboardType=$type
-     fi
-   done
+  type=$1
+  if [ -z "$2" ]; then
+    dir=$"$DASH_BASE/$type"
+  else
+    dir=$2
+  fi
+
+  for f in $dir/*.json; do
+    # Need to check existence because if there are no matching files,
+    # f will include the wildcard character (*)
+    if [ -f "$f" ]; then
+      log_debug "Deploying dashboard from file [$f]"
+      name=$(basename $f .json)
+
+      kubectl create cm -n $DASH_NS $name --dry-run=client --from-file $f -o yaml | kubectl apply -f -
+      kubectl label cm -n $DASH_NS $name --overwrite grafana_dashboard=1 sas.com/monitoring-base=kube-viya-monitoring sas.com/dashboardType=$type
+    fi
+  done
 }
 
 # Single argument supported. If specified, deploy either the specified .json
@@ -67,7 +67,7 @@ if [ "$1" != "" ]; then
   if [ -d "$1" ]; then
     # Deploy specified directory of dashboards
     log_verbose "Deploying Grafana dashboards in [$1]"
-    deploy_dashboards "manual" "$1" 
+    deploy_dashboards "manual" "$1"
     exit $?
   fi
 
@@ -107,7 +107,7 @@ if [ "$VIYA_LOGS_DASH" == "true" ]; then
 fi
 
 if [ "$PGMONITOR_DASH" == "true" ]; then
-  log_verbose "Deploying Postgres dashboards"  
+  log_verbose "Deploying Postgres dashboards"
   deploy_dashboards "pgmonitor"
 fi
 

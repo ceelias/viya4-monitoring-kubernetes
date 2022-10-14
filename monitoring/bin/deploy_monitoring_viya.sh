@@ -55,13 +55,13 @@ if [ "$PUSHGATEWAY_ENABLED" == "true" ]; then
   log_info "Installing the Prometheus Pushgateway to the [$VIYA_NS] namespace"
   helm2ReleaseCheck pushgateway-$VIYA_NS
   helm $helmDebug upgrade --install prometheus-pushgateway \
-  --namespace $VIYA_NS \
-  --version $PUSHGATEWAY_CHART_VERSION \
-  --set service.clusterIP=$svcClusterIP \
-  -f monitoring/values-pushgateway.yaml \
-  -f $wnpValuesFile \
-  -f $PUSHGATEWAY_USER_YAML \
-  prometheus-community/prometheus-pushgateway
+    --namespace $VIYA_NS \
+    --version $PUSHGATEWAY_CHART_VERSION \
+    --set service.clusterIP=$svcClusterIP \
+    -f monitoring/values-pushgateway.yaml \
+    -f $wnpValuesFile \
+    -f $PUSHGATEWAY_USER_YAML \
+    prometheus-community/prometheus-pushgateway
 fi
 
 if [ "$OPENSHIFT_CLUSTER" == "true" ]; then
@@ -96,4 +96,3 @@ if helm3ReleaseExists "v4m-viya" $VIYA_NS; then
 fi
 
 deployV4MInfo "$VIYA_NS" "v4m-metrics-viya"
-

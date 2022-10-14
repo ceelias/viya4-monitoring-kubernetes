@@ -6,7 +6,7 @@
 cd "$(dirname $BASH_SOURCE)/../.."
 source logging/bin/common.sh
 
-this_script=`basename "$0"`
+this_script=$(basename "$0")
 
 log_debug "Script [$this_script] has started [$(date)]"
 
@@ -18,7 +18,6 @@ if [ "$OPENSHIFT_CLUSTER" != "true" ]; then
     exit 1
   fi
 fi
-
 
 # remove OpenShift-specific content not removed by primary removal script
 logging/bin/remove_openshift_artifacts.sh

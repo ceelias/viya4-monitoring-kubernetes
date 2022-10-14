@@ -6,7 +6,7 @@
 cd "$(dirname $BASH_SOURCE)/../.."
 source monitoring/bin/common.sh
 
-if [ "$OPENSHIFT_CLUSTER" == "true" ]; then  
+if [ "$OPENSHIFT_CLUSTER" == "true" ]; then
   if [ "${CHECK_OPENSHIFT_CLUSTER:-true}" == "true" ]; then
     log_error "This script should not be run on OpenShift clusters"
     log_error "Run monitoring/bin/remove_monitoring_openshift.sh instead"
@@ -25,7 +25,7 @@ log_notice "Removing components from the [$MON_NS] namespace..."
 
 if helm3ReleaseExists prometheus-operator $MON_NS; then
   promRelease=prometheus-operator
-elif helm3ReleaseExists v4m-prometheus-operator $MON_NS; then  
+elif helm3ReleaseExists v4m-prometheus-operator $MON_NS; then
   promRelease=v4m-prometheus-operator
 else
   promRelease=
@@ -34,7 +34,7 @@ fi
 if [ ! -z $promRelease ]; then
   log_info "Removing the kube-prometheus stack..."
   helm uninstall --namespace $MON_NS $promRelease
-fi 
+fi
 
 if [ $? != 0 ]; then
   log_warn "Uninstall of [$promRelease] was not successful. Check output above for details."
@@ -54,9 +54,8 @@ fi
 monitoring/bin/remove_dashboards.sh
 
 log_verbose "Removing Prometheus rules"
-rules=( sas-launcher-job-rules )
-for rule in "${rules[@]}"
-do
+rules=(sas-launcher-job-rules)
+for rule in "${rules[@]}"; do
   kubectl delete --ignore-not-found -n $MON_NS prometheusrule $rule
 done
 
@@ -81,10 +80,9 @@ log_info "Waiting 60 sec for resources to terminate"
 sleep 60
 
 log_info "Checking contents of the [$MON_NS] namespace:"
-crds=( all pvc cm servicemonitor podmonitor prometheus alertmanager prometheusrule thanosrulers )
+crds=(all pvc cm servicemonitor podmonitor prometheus alertmanager prometheusrule thanosrulers)
 empty="true"
-for crd in "${crds[@]}"
-do
+for crd in "${crds[@]}"; do
   out=$(kubectl get -n $MON_NS $crd 2>&1)
   if [[ "$out" =~ 'No resources found' ]]; then
     :

@@ -57,7 +57,7 @@ if [ "$LOGGING_DATASOURCE" == "true" ]; then
   set +e
   log_debug "Creating the logging datasource using the create_logging_datasource script"
   monitoring/bin/create_logging_datasource.sh
-  if (( $? == 1 )); then
+  if (($? == 1)); then
     log_warn "Unable to configure the logging data source at this time."
     log_warn "Please address the errors and re-run the follow command to create the data source at a later time:"
     log_warn "monitoring/bin/create_logging_datasource.sh"
@@ -92,7 +92,7 @@ fi
 # Access token to OpenShift Prometheus instances
 grafanaYAML=$TMP_DIR/grafana-values.yaml
 cp monitoring/openshift/grafana-values.yaml $grafanaYAML
-if echo "$OSTYPE" | grep 'darwin' > /dev/null 2>&1; then
+if echo "$OSTYPE" | grep 'darwin' >/dev/null 2>&1; then
   sed -i '' "s/__BEARER_TOKEN__/$grafanaToken/g" $grafanaYAML
 else
   sed -i "s/__BEARER_TOKEN__/$grafanaToken/g" $grafanaYAML
@@ -163,7 +163,7 @@ if [ "$OPENSHIFT_AUTH_ENABLE" == "true" ]; then
   log_debug "Adding ClusterRoleBinding for grafana-serviceaccount..."
   crbYAML=$TMP_DIR/grafana-serviceaccount-binding.yaml
   cp monitoring/openshift/grafana-serviceaccount-binding.yaml $crbYAML
-  if echo "$OSTYPE" | grep 'darwin' > /dev/null 2>&1; then
+  if echo "$OSTYPE" | grep 'darwin' >/dev/null 2>&1; then
     sed -i '' "s/__MON_NS__/$MON_NS/g" $crbYAML
   else
     sed -i "s/__MON_NS__/$MON_NS/g" $crbYAML
@@ -172,7 +172,7 @@ if [ "$OPENSHIFT_AUTH_ENABLE" == "true" ]; then
   kubectl apply -f $crbYAML
 
   kubectl apply -n $MON_NS -f monitoring/openshift/grafana-proxy-secret.yaml
-  
+
   grafanaProxyPatchYAML=$TMP_DIR/grafana-proxy-patch.yaml
 
   if [ "$OPENSHIFT_PATH_ROUTES" == "true" ]; then
@@ -182,10 +182,10 @@ if [ "$OPENSHIFT_AUTH_ENABLE" == "true" ]; then
     log_debug "Using host-based version of the OpenShift Grafana proxy patch"
     cp monitoring/openshift/grafana-proxy-patch-host.yaml $grafanaProxyPatchYAML
   fi
-    
+
   log_debug "Deploying CA bundle..."
   kubectl apply -n $MON_NS -f monitoring/openshift/grafana-trusted-ca-bundle.yaml
-  
+
   log_info "Patching Grafana service for auto-generated TLS certs"
   kubectl annotate service -n $MON_NS --overwrite v4m-grafana 'service.beta.openshift.io/serving-cert-secret-name=grafana-tls'
 

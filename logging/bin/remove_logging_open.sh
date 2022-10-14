@@ -8,4 +8,3 @@ source logging/bin/common.sh
 
 log_error "This script is obsolete."
 log_error "Run logging/bin/remove_logging.sh instead."
-

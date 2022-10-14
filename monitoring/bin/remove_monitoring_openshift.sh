@@ -59,9 +59,8 @@ log_info "Removing dashboards..."
 monitoring/bin/remove_dashboards.sh
 
 log_info "Removing Prometheus rules..."
-rules=( sas-launcher-job-rules )
-for rule in "${rules[@]}"
-do
+rules=(sas-launcher-job-rules)
+for rule in "${rules[@]}"; do
   kubectl delete --ignore-not-found -n $MON_NS prometheusrule $rule
 done
 
@@ -81,10 +80,9 @@ log_info "Waiting 10 sec for resources to terminate..."
 sleep 10
 
 log_info "Checking contents of the [$MON_NS] namespace:"
-crds=( all pvc cm servicemonitor podmonitor prometheus alertmanager prometheusrule thanosrulers )
+crds=(all pvc cm servicemonitor podmonitor prometheus alertmanager prometheusrule thanosrulers)
 empty="true"
-for crd in "${crds[@]}"
-do
+for crd in "${crds[@]}"; do
   out=$(kubectl get -n $MON_NS $crd 2>&1)
   if [[ "$out" =~ 'No resources found' ]]; then
     :

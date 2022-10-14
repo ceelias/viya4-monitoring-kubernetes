@@ -6,7 +6,7 @@
 cd "$(dirname $BASH_SOURCE)/../.."
 source logging/bin/common.sh
 
-this_script=`basename "$0"`
+this_script=$(basename "$0")
 
 log_debug "Script [$this_script] has started [$(date)]"
 
@@ -20,20 +20,20 @@ fi
 
 EVENTROUTER_ENABLE=${EVENTROUTER_ENABLE:-true}
 if [ "$EVENTROUTER_ENABLE" == "true" ]; then
-   # Eventrouter ServiceMonitor
-   kubectl apply -n $LOG_NS -f monitoring/monitors/kube/podMonitor-eventrouter.yaml
+  # Eventrouter ServiceMonitor
+  kubectl apply -n $LOG_NS -f monitoring/monitors/kube/podMonitor-eventrouter.yaml
 fi
 
 ELASTICSEARCH_ENABLE=${ELASTICSEARCH_ENABLE:-true}
 if [ "$ELASTICSEARCH_ENABLE" == "true" ]; then
-   # Elasticsearch ServiceMonitor
-   kubectl apply -n $LOG_NS -f monitoring/monitors/logging/serviceMonitor-elasticsearch.yaml
+  # Elasticsearch ServiceMonitor
+  kubectl apply -n $LOG_NS -f monitoring/monitors/logging/serviceMonitor-elasticsearch.yaml
 fi
 
 FLUENT_BIT_ENABLED=${FLUENT_BIT_ENABLED:-true}
 if [ "$FLUENT_BIT_ENABLED" == "true" ]; then
-   # Fluent Bit ServiceMonitors
-   kubectl apply -n $LOG_NS -f monitoring/monitors/logging/serviceMonitor-fluent-bit-v2.yaml
+  # Fluent Bit ServiceMonitors
+  kubectl apply -n $LOG_NS -f monitoring/monitors/logging/serviceMonitor-fluent-bit-v2.yaml
 fi
 
 log_info "ServiceMonitors have been deployed."

@@ -6,7 +6,7 @@
 cd "$(dirname $BASH_SOURCE)/../.."
 source logging/bin/common.sh
 
-this_script=`basename "$0"`
+this_script=$(basename "$0")
 
 log_debug "Script [$this_script] has started [$(date)]"
 
@@ -15,11 +15,10 @@ log_notice "* This script [remove_logging_fluentbit_azmonitor.sh] is deprecated 
 log_notice "* Moving forward, please use the [remove_fluentbit_azmonitor.sh] script to remove Fluent Bit instead.  *"
 echo ""
 
-log_info  "Calling the [remove_fluentbit_azmonitor.sh] script..."
+log_info "Calling the [remove_fluentbit_azmonitor.sh] script..."
 
 # Call replacement script
 logging/bin/remove_fluentbit_azmonitor.sh
-
 
 log_debug "Script [$this_script] has completed [$(date)]"
 echo ""

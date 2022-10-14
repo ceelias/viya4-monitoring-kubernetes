@@ -18,7 +18,6 @@ if [ "$OPENSHIFT_CLUSTER" == "true" ]; then
   fi
 fi
 
-
 # set flag indicating wrapper/driver script being run
 export LOGGING_DRIVER=true
 
@@ -32,7 +31,6 @@ checkDefaultStorageClass
 if [ "$(kubectl get ns $LOG_NS -o name 2>/dev/null)" == "" ]; then
   kubectl create ns $LOG_NS
 fi
-
 
 log_notice "Deploying logging components to the [$LOG_NS] namespace [$(date)]"
 
@@ -88,7 +86,6 @@ set +e
 bin/show_app_url.sh OSD OS
 set -e
 
-
 ##################################
 # Version Info                   #
 ##################################
@@ -103,7 +100,6 @@ if ! deployV4MInfo "$LOG_NS" "v4m-logs"; then
   log_warn "Unable to update SAS Viya Monitoring Helm chart release"
 fi
 
-
 # Write any "notices" to console
 log_message ""
 display_notices
@@ -111,4 +107,3 @@ display_notices
 log_message ""
 log_notice "The deployment of logging components has completed [$(date)]"
 echo ""
-

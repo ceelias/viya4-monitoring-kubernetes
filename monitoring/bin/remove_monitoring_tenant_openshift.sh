@@ -46,7 +46,7 @@ cp -R monitoring/multitenant/* $tenantDir/
 # Replace placeholders
 log_debug "Replacing __TENANT__ for files in [$tenantDir]"
 for f in $(find $tenantDir -name '*.yaml'); do
-  if echo "$OSTYPE" | grep 'darwin' > /dev/null 2>&1; then
+  if echo "$OSTYPE" | grep 'darwin' >/dev/null 2>&1; then
     sed -i '' "s/__TENANT__/$VIYA_TENANT/g" $f
     sed -i '' "s/__TENANT_NS__/$VIYA_NS/g" $f
     sed -i '' "s/__MON_NS__/$MON_NS/g" $f
@@ -69,7 +69,7 @@ log_debug "Removing Grafana datasource..."
 kubectl delete secret -n $VIYA_NS --ignore-not-found -l grafana_datasource-$VIYA_TENANT >/dev/null
 
 log_debug "Removing namespace resources..."
-types=( route prometheus prometheusrule servicemonitor podmonitor service configmap serviceaccount )
+types=(route prometheus prometheusrule servicemonitor podmonitor service configmap serviceaccount)
 for type in "${types[@]}"; do
   log_debug "  Removing [$type] resources..."
   kubectl delete --ignore-not-found $type -n $VIYA_NS -l "v4m.sas.com/tenant=$VIYA_TENANT" >/dev/null

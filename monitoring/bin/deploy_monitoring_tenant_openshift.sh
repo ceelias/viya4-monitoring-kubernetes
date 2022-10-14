@@ -30,9 +30,8 @@ if [ "$VIYA_TENANT" == "" ]; then
 fi
 
 # EXPERIMENTAL Notice
-log_notice  "***Experimental - This script may be removed or undergo significant changes in the future***"
+log_notice "***Experimental - This script may be removed or undergo significant changes in the future***"
 log_message " " #blank line to improve readability
-
 
 log_notice "Deploying OpenShift tenant monitoring for [$VIYA_TENANT] to the [$VIYA_NS] namespace..."
 
@@ -44,7 +43,7 @@ cp -R monitoring/multitenant/* $tenantDir/
 # Replace placeholders
 log_debug "Replacing __TENANT__ for files in [$tenantDir]"
 for f in $(find $tenantDir -name '*.yaml'); do
-  if echo "$OSTYPE" | grep 'darwin' > /dev/null 2>&1; then
+  if echo "$OSTYPE" | grep 'darwin' >/dev/null 2>&1; then
     sed -i '' "s/__TENANT__/$VIYA_TENANT/g" $f
     sed -i '' "s/__TENANT_NS__/$VIYA_NS/g" $f
     sed -i '' "s/__MON_NS__/$MON_NS/g" $f
@@ -207,18 +206,18 @@ kubectl apply -n $VIYA_NS -f $tenantDir/serviceMonitor-sas-cas-tenant.yaml
 kubectl apply -n $VIYA_NS -f $tenantDir/serviceMonitor-sas-pushgateway-tenant.yaml
 
 function deploy_tenant_dashboards {
-   dir=$1
-   for f in $dir/*.json; do
-     # Need to check existence because if there are no matching files,
-     # f will include the wildcard character (*)
-     if [ -f "$f" ]; then
-       log_debug "Deploying dashboard from file [$f]"
-       name=$(basename $f .json)-$VIYA_TENANT
+  dir=$1
+  for f in $dir/*.json; do
+    # Need to check existence because if there are no matching files,
+    # f will include the wildcard character (*)
+    if [ -f "$f" ]; then
+      log_debug "Deploying dashboard from file [$f]"
+      name=$(basename $f .json)-$VIYA_TENANT
 
-       kubectl create cm -n $DASH_NS $name --dry-run=client --from-file $f -o yaml | kubectl apply -f -
-       kubectl label cm -n $DASH_NS $name --overwrite grafana_dashboard-$VIYA_TENANT=1 sas.com/monitoring-base=kube-viya-monitoring
-     fi
-   done
+      kubectl create cm -n $DASH_NS $name --dry-run=client --from-file $f -o yaml | kubectl apply -f -
+      kubectl label cm -n $DASH_NS $name --overwrite grafana_dashboard-$VIYA_TENANT=1 sas.com/monitoring-base=kube-viya-monitoring
+    fi
+  done
 }
 
 # Deploy dashboards
