@@ -31,30 +31,30 @@ function get_k8s_info {
   info=$(kubectl -n "$namespace" get "$object" -o=jsonpath=$jsonpath 2>/dev/null)
   rc=$?
 
-  if [ ! -z  "$info" ]; then
-     echo "$info"
+  if [ ! -z "$info" ]; then
+    echo "$info"
   else
-     v4m_rc=1
-     echo ""
+    v4m_rc=1
+    echo ""
   fi
 }
 
 function get_ingress_ports {
   if [ -z "$ingress_http_port" ]; then
 
-     ingress_namespace="${NGINX_NS:-ingress-nginx}"
+    ingress_namespace="${NGINX_NS:-ingress-nginx}"
 
-     ingress_service="service/${NGINX_SVCNAME:-ingress-nginx-controller}"
+    ingress_service="service/${NGINX_SVCNAME:-ingress-nginx-controller}"
 
-     ingress_http_port=$(get_k8s_info "$ingress_namespace" "$ingress_service" "$json_service_http_port")
-     if [ "$ingress_http_port" == "80" ]; then
-        ingress_http_port=""
-     fi
+    ingress_http_port=$(get_k8s_info "$ingress_namespace" "$ingress_service" "$json_service_http_port")
+    if [ "$ingress_http_port" == "80" ]; then
+      ingress_http_port=""
+    fi
 
-     ingress_https_port=$(get_k8s_info "$ingress_namespace" "$ingress_service" "$json_service_https_port")
-     if [ "$ingress_https_port" == "443" ]; then
-        ingress_https_port=""
-     fi
+    ingress_https_port=$(get_k8s_info "$ingress_namespace" "$ingress_service" "$json_service_https_port")
+    if [ "$ingress_https_port" == "443" ]; then
+      ingress_https_port=""
+    fi
   fi
 }
 
@@ -64,43 +64,43 @@ function get_ingress_url {
   namespace=$1
   name=$2
 
-  if [ ! "$(kubectl -n $namespace  get ingress/$name 2>/dev/null)" ]; then
-     # ingress object does not exist
-     v4m_rc=1
-     echo ""
-     return
+  if [ ! "$(kubectl -n $namespace get ingress/$name 2>/dev/null)" ]; then
+    # ingress object does not exist
+    v4m_rc=1
+    echo ""
+    return
   fi
 
   host=$(get_k8s_info "$namespace" "ingress/$name" "$json_ingress_host")
   if [ -z "$host" ]; then
-     v4m_rc=1
-     echo ""
-     return
+    v4m_rc=1
+    echo ""
+    return
   fi
 
   path=$(get_k8s_info "$namespace" "ingress/$name" "$json_ingress_path")
   if [ -z "$path" ]; then
-     v4m_rc=1
-     echo ""
-     return
+    v4m_rc=1
+    echo ""
+    return
   fi
 
   tls_info=$(get_k8s_info "$namespace" "ingress/$name" "$json_ingress_tls")
   if [ -n "$tls_info" ]; then
-     port=$ingress_https_port
-     protocol=https
+    port=$ingress_https_port
+    protocol=https
   else
-     port=$ingress_http_port
-     protocol=http
+    port=$ingress_http_port
+    protocol=http
   fi
 
   if [ -n "$port" ]; then
-     porttxt=":$port"
+    porttxt=":$port"
   fi
 
   url="$protocol://${host}${porttxt}${path}"
 
-  url="${url%/}"   # strip any trailing "/"
+  url="${url%/}" # strip any trailing "/"
   echo "$url"
 }
 
@@ -112,9 +112,9 @@ function get_route_url {
 
   host=$(get_k8s_info "$namespace" "route/$service" "$json_route_host")
   if [ -z "$host" ]; then
-     v4m_rc=1
-     echo ""
-     return
+    v4m_rc=1
+    echo ""
+    return
   fi
 
   # OK if path is empty
@@ -122,13 +122,13 @@ function get_route_url {
 
   tls_mode=$(get_k8s_info "$namespace" "route/$service" "$json_route_tls")
   if [ -z "$tls_mode" ]; then
-     protocol="http"
+    protocol="http"
   else
-     protocol="https"
+    protocol="https"
   fi
 
   url="$protocol://$host$path"
-  url="${url%/}"   # strip any trailing "/"
+  url="${url%/}" # strip any trailing "/"
 
   echo "$url"
 }
@@ -142,26 +142,26 @@ function get_nodeport_url {
 
   if [ ! "$(kubectl -n $namespace get service/$service 2>/dev/null)" ]; then
     # ingress object does not exist
-     v4m_rc=1
-     echo ""
-     return
+    v4m_rc=1
+    echo ""
+    return
   fi
 
   host="$(kubectl get node --selector='node-role.kubernetes.io/master' | awk 'NR==2 { print $1 }')"
   if [ -z "$host" ]; then
-     host=$(kubectl get nodes | awk 'NR==2 { print $1 }')  # use first node
+    host=$(kubectl get nodes | awk 'NR==2 { print $1 }') # use first node
   fi
 
   port=$(get_k8s_info "$namespace" "service/$service" "$json_service_nodeport")
 
   if [ "$tls_enabled" == "true" ]; then
-     protocol=https
+    protocol=https
   else
-     protocol=http
+    protocol=http
   fi
 
   if [ ! -z "$port" ]; then
-     porttxt=":$port"
+    porttxt=":$port"
   fi
 
   url="$protocol://${host}${porttxt}"
@@ -169,58 +169,58 @@ function get_nodeport_url {
 }
 
 function get_service_url {
- local namespace service use_tls ingress service_type url
+  local namespace service use_tls ingress service_type url
 
- namespace=$1
- service=$2                 # name of service
- use_tls=$3                 # (optional - NodePort only) use http or https (ingress properties over-ride)
- ingress=${4:-${service}}   # (optional) name of ingress/route object (default: $service)
+  namespace=$1
+  service=$2               # name of service
+  use_tls=$3               # (optional - NodePort only) use http or https (ingress properties over-ride)
+  ingress=${4:-${service}} # (optional) name of ingress/route object (default: $service)
 
- # is a route defined for this service?
- if [ "$OPENSHIFT_CLUSTER" == "true" ] && [ "$(kubectl -n $namespace get route/$service 2>/dev/null)" ]; then
-     url=$(get_route_url $namespace $service)
+  # is a route defined for this service?
+  if [ "$OPENSHIFT_CLUSTER" == "true" ] && [ "$(kubectl -n $namespace get route/$service 2>/dev/null)" ]; then
+    url=$(get_route_url $namespace $service)
 
-     if [ -z "$url" ]; then
-        v4m_rc=1
-        echo ""
-        return
-     else
-        echo "$url"
-        return
-     fi
- fi
+    if [ -z "$url" ]; then
+      v4m_rc=1
+      echo ""
+      return
+    else
+      echo "$url"
+      return
+    fi
+  fi
 
- # determine nodePort or clusterPort (ingress)
- service_type=$(get_k8s_info "$namespace" "service/$service" "$json_service_type")
+  # determine nodePort or clusterPort (ingress)
+  service_type=$(get_k8s_info "$namespace" "service/$service" "$json_service_type")
 
- if [ "$service_type" == "ClusterIP" ]; then
-     get_ingress_ports
+  if [ "$service_type" == "ClusterIP" ]; then
+    get_ingress_ports
 
-     url=$(get_ingress_url $namespace $ingress)
+    url=$(get_ingress_url $namespace $ingress)
 
-     if [ -z "$url" ]; then
-        v4m_rc=1
-        echo ""
-        return
-     else
-        echo "$url"
-     fi
- elif [ "$service_type" == "NodePort" ]; then
-     url=$(get_nodeport_url $namespace $service $use_tls)
+    if [ -z "$url" ]; then
+      v4m_rc=1
+      echo ""
+      return
+    else
+      echo "$url"
+    fi
+  elif [ "$service_type" == "NodePort" ]; then
+    url=$(get_nodeport_url $namespace $service $use_tls)
 
-     if [ -z "$url" ]; then
-        v4m_rc=1
-        echo ""
-        return
-     else
-        echo "$url"
-     fi
- else
-     # uh-oh, how what?
-     v4m_rc=1
-     echo ""
-     return
- fi
+    if [ -z "$url" ]; then
+      v4m_rc=1
+      echo ""
+      return
+    else
+      echo "$url"
+    fi
+  else
+    # uh-oh, how what?
+    v4m_rc=1
+    echo ""
+    return
+  fi
 }
 
 # USAGE NOTES

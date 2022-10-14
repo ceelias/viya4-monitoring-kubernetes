@@ -11,48 +11,48 @@ function ocVersionCheck {
   allArr=($(oc version 2>/dev/null))
   IFS=$origIFS
 
-  for (( i=0; i<${#allArr[@]}; i++ )); do
+  for ((i = 0; i < ${#allArr[@]}; i++)); do
     # Split the line into an array
     verArr=(${allArr[$i]})
     if [ ${#verArr[@]} -eq 3 ]; then
       verType="${verArr[0]}"
       ver="${verArr[2]}"
       if [ "$verType" == "Client" ]; then
-          ver="${verArr[2]}"
-          if [[ $ver =~ v?(([0-9]+)\.([0-9]+)\.([0-9]+)) ]]; then
-            OC_FULL_VERSION=${BASH_REMATCH[1]}
-            OC_MAJOR_VERSION=${BASH_REMATCH[2]}
-            OC_MINOR_VERSION=${BASH_REMATCH[3]}
-            OC_PATCH_VERSION=${BASH_REMATCH[4]}
-          else
-            echo "Unable to parse client version: [$ver]"
-          fi
+        ver="${verArr[2]}"
+        if [[ $ver =~ v?(([0-9]+)\.([0-9]+)\.([0-9]+)) ]]; then
+          OC_FULL_VERSION=${BASH_REMATCH[1]}
+          OC_MAJOR_VERSION=${BASH_REMATCH[2]}
+          OC_MINOR_VERSION=${BASH_REMATCH[3]}
+          OC_PATCH_VERSION=${BASH_REMATCH[4]}
+        else
+          echo "Unable to parse client version: [$ver]"
+        fi
       elif [ "$verType" == "Server" ]; then
-          ver="${verArr[2]}"
-          if [[ $ver =~ (([0-9]+)\.([0-9]+)\.([0-9]+)) ]]; then
-            OSHIFT_FULL_VERSION=${BASH_REMATCH[1]}
-            OSHIFT_MAJOR_VERSION=${BASH_REMATCH[2]}
-            OSHIFT_MINOR_VERSION=${BASH_REMATCH[3]}
-            OSHIFT_PATCH_VERSION=${BASH_REMATCH[4]}
-          else
-            echo "Unable to parse server version: [$ver]"
-          fi
+        ver="${verArr[2]}"
+        if [[ $ver =~ (([0-9]+)\.([0-9]+)\.([0-9]+)) ]]; then
+          OSHIFT_FULL_VERSION=${BASH_REMATCH[1]}
+          OSHIFT_MAJOR_VERSION=${BASH_REMATCH[2]}
+          OSHIFT_MINOR_VERSION=${BASH_REMATCH[3]}
+          OSHIFT_PATCH_VERSION=${BASH_REMATCH[4]}
+        else
+          echo "Unable to parse server version: [$ver]"
+        fi
       fi
     fi
   done
   log_info "OpenShift client version: $OC_FULL_VERSION"
   log_info "OpenShift server version: $OSHIFT_FULL_VERSION"
-  
+
   # Version enforcement
   if [ "$OPENSHIFT_VERSION_CHECK" == "true" ]; then
     ## Server Version
     ### Openshift versions that do not start with a 4 should produce an error.
-    if (( "$OSHIFT_MAJOR_VERSION" != 4 )); then
+    if (("$OSHIFT_MAJOR_VERSION" != 4)); then
       log_error "Unsupported OpenShift server version: $OSHIFT_FULL_VERSION"
       log_error "Version 4.8+ is required"
       exit 1
     ### Openshift 4 versions earlier than 4.8 should produce an error.
-    elif (( "$OSHIFT_MINOR_VERSION" < 8 )); then
+    elif (("$OSHIFT_MINOR_VERSION" < 8)); then
       log_error "Unsupported OpenShift server version: $OSHIFT_FULL_VERSION"
       log_error "Version 4.8+ is required"
       exit 1
@@ -62,12 +62,12 @@ function ocVersionCheck {
 
     ## Client Version
     ### Openshift versions that do not start with a 4 should produce an error.
-    if (( "$OC_MAJOR_VERSION" != 4 )); then
+    if (("$OC_MAJOR_VERSION" != 4)); then
       log_error "Unsupported OpenShift client version: $OC_FULL_VERSION"
       log_error "Version 4.7+ is required"
       exit 1
     ### Openshift 4 client version must be w/in 1 minor releases of server minimum.
-    elif (( "$OC_MINOR_VERSION" < 7 )); then
+    elif (("$OC_MINOR_VERSION" < 7)); then
       log_error "Unsupported OpenShift client version: $OC_FULL_VERSION"
       log_error "Version 4.7+ is required"
       exit 1

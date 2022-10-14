@@ -18,7 +18,7 @@ KUBE_SERVER_VER=$(kubectl version --short | grep 'Server Version' | awk '{print 
 # Client version allowed to be one minor version earlier than minimum server version
 if [[ $KUBE_CLIENT_VER =~ v1.2[1-9] ]]; then
   :
-else 
+else
   log_error "Unsupported kubectl version: [$KUBE_CLIENT_VER]"
   exit 1
 fi
@@ -26,7 +26,7 @@ fi
 # Minimuim version: 1.22  effective: 18OCT22
 if [[ $KUBE_SERVER_VER =~ v1.2[2-9] ]]; then
   :
-else 
+else
   log_error "Unsupported Kubernetes server version: [$KUBE_SERVER_VER]"
   exit 1
 fi

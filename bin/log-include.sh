@@ -10,7 +10,7 @@ LOG_VERBOSE_ENABLE=${LOG_VERBOSE_ENABLE:-true}
 
 # This must be run without 'set -e' being set
 # So it has to be done up here and not within log_notice
-if [ -z "$TERM" ] || ! tput cols >/dev/null 2>&1 ; then
+if [ -z "$TERM" ] || ! tput cols >/dev/null 2>&1; then
   # Non-interactive shell
   LOG_COLOR_ENABLE=false
   noticeColWidth=${LOG_NOTICE_COL_WIDTH:-100}
@@ -31,27 +31,26 @@ if [ "$LOG_VERBOSE_ENABLE" != "true" ]; then
 fi
 
 function add_notice {
-  echo $* >> $TMP_DIR/notices.txt
+  echo $* >>$TMP_DIR/notices.txt
 }
 
 function display_notices {
   if [ -f "$TMP_DIR/notices.txt" ]; then
-     IFS=''
-     cat $TMP_DIR/notices.txt | while read line || [[ -n "$line" ]];
-     do
-       log_notice "$line"
-     done
- fi
+    IFS=''
+    cat $TMP_DIR/notices.txt | while read line || [[ -n "$line" ]]; do
+      log_notice "$line"
+    done
+  fi
 }
 
 function log_notice {
   width=$noticeColWidth
   n=$(expr $width - $(echo "$1" | wc -c))
   if [ $n -lt 0 ]; then
-     n=0
+    n=0
   fi
   # Fill remaining characters with spaces
-  text="$*$(printf %$(eval 'echo $n')s |tr ' ' ' ')"
+  text="$*$(printf %$(eval 'echo $n')s | tr ' ' ' ')"
 
   if [ "$LOG_COLOR_ENABLE" = "true" ]; then
     whiteb "${bluebg}$text"
@@ -61,20 +60,20 @@ function log_notice {
 }
 
 function log_message {
-    echo "$*"  >&3
+  echo "$*" >&3
 }
 
 function log_debug {
   if [ "$LOG_DEBUG_ENABLE" = "true" ]; then
     if [ "$LOG_LEVEL_ENABLE" = "true" ]; then
-        level="DEBUG "
+      level="DEBUG "
     else
-        level=""
+      level=""
     fi
     if [ "$LOG_COLOR_ENABLE" = "true" ]; then
-        echo -e "${whiteb}${level}${white}$*${end}" >&3
+      echo -e "${whiteb}${level}${white}$*${end}" >&3
     else
-        echo "${level}$*" >&3
+      echo "${level}$*" >&3
     fi
   fi
 }
@@ -96,7 +95,7 @@ function log_info {
 # The value of LOG_VERBOSE_ENABLE determines whether they are displayed
 function log_verbose {
   if [ "$LOG_VERBOSE_ENABLE" == "true" ]; then
-		log_info $* >&3
+    log_info $* >&3
   fi
 }
 

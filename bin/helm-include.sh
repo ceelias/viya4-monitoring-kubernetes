@@ -12,16 +12,16 @@ if [ ! $(which helm) ]; then
 fi
 
 helmVer=$(helm version --short 2>/dev/null)
-hver=( $(echo ${helmVer//[^0-9]/ }) )
+hver=($(echo ${helmVer//[^0-9]/ }))
 HELM_VER_MAJOR=${hver[0]}
 HELM_VER_MINOR=${hver[1]}
 HELM_VER_PATCH=${hver[2]}
 HELM_VER_FULL=$HELM_VER_MAJOR.$HELM_VER_MINOR.$HELM_VER_PATCH
 if [ "$HELM_VER_MAJOR" == "2" ]; then
-    log_error "Helm 2.x has reached end of life as of 11/13/2020 and is no longer supported"
-    log_error "See: https://github.com/helm/helm/releases/tag/v2.17.0 for details"
-    log_error "Please upgrade to Helm 3.x at https://github.com/helm/helm/releases"
-    exit 1
+  log_error "Helm 2.x has reached end of life as of 11/13/2020 and is no longer supported"
+  log_error "See: https://github.com/helm/helm/releases/tag/v2.17.0 for details"
+  log_error "Please upgrade to Helm 3.x at https://github.com/helm/helm/releases"
+  exit 1
 fi
 
 function helm2ReleaseExists {
@@ -56,7 +56,7 @@ function helm2ReleaseCheck {
       log_error "A Helm 2.x release of [$release] already exists"
       log_error "Helm [$HELM_VER_FULL] cannot manage the Helm 2.x release of [$release]"
       exit 1
-    fi  
+    fi
   fi
 }
 
