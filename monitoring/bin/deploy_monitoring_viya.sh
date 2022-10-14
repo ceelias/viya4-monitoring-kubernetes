@@ -3,7 +3,7 @@
 # Copyright © 2020, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.."
 source monitoring/bin/common.sh
 source bin/openshift-include.sh
 
@@ -49,18 +49,18 @@ set -e
 PUSHGATEWAY_ENABLED=${PUSHGATEWAY_ENABLED:-true}
 if [ "$PUSHGATEWAY_ENABLED" == "true" ]; then
   PUSHGATEWAY_CHART_VERSION=${PUSHGATEWAY_CHART_VERSION:-1.11.0}
-  if helm3ReleaseExists prometheus-pushgateway $VIYA_NS; then
-    svcClusterIP=$(kubectl get svc -n $VIYA_NS prometheus-pushgateway -o 'jsonpath={.spec.clusterIP}')
+  if helm3ReleaseExists prometheus-pushgateway "$VIYA_NS"; then
+    svcClusterIP=$(kubectl get svc -n "$VIYA_NS" prometheus-pushgateway -o 'jsonpath={.spec.clusterIP}')
   fi
   log_info "Installing the Prometheus Pushgateway to the [$VIYA_NS] namespace"
-  helm2ReleaseCheck pushgateway-$VIYA_NS
+  helm2ReleaseCheck pushgateway-"$VIYA_NS"
   helm $helmDebug upgrade --install prometheus-pushgateway \
-    --namespace $VIYA_NS \
-    --version $PUSHGATEWAY_CHART_VERSION \
-    --set service.clusterIP=$svcClusterIP \
+    --namespace "$VIYA_NS" \
+    --version "$PUSHGATEWAY_CHART_VERSION" \
+    --set service.clusterIP="$svcClusterIP" \
     -f monitoring/values-pushgateway.yaml \
-    -f $wnpValuesFile \
-    -f $PUSHGATEWAY_USER_YAML \
+    -f "$wnpValuesFile" \
+    -f "$PUSHGATEWAY_USER_YAML" \
     prometheus-community/prometheus-pushgateway
 fi
 
@@ -74,23 +74,23 @@ fi
 if [ "$(kubectl get crd servicemonitors.monitoring.coreos.com -o name 2>/dev/null)" ]; then
   log_info "Adding monitors for resources in the [$VIYA_NS] namespace..."
   for f in monitoring/monitors/viya/serviceMonitor-*.yaml; do
-    kubectl apply -n $VIYA_NS -f "$f" --validate=$VALIDATE_MONITORS
+    kubectl apply -n "$VIYA_NS" -f "$f" --validate="$VALIDATE_MONITORS"
   done
   for f in monitoring/monitors/viya/podMonitor-*.yaml; do
-    kubectl apply -n $VIYA_NS -f "$f" --validate=$VALIDATE_MONITORS
+    kubectl apply -n "$VIYA_NS" -f "$f" --validate="$VALIDATE_MONITORS"
   done
   log_notice "Monitoring components successfully deployed into the [$VIYA_NS] namespace"
 
   # Temporary - Remove obsolete ServiceMonitors
-  kubectl delete --ignore-not-found ServiceMonitor -n $VIYA_NS sas-java-services
-  kubectl delete --ignore-not-found ServiceMonitor -n $VIYA_NS sas-go-services
-  kubectl delete --ignore-not-found ServiceMonitor -n $VIYA_NS sas-deployment-operator
+  kubectl delete --ignore-not-found ServiceMonitor -n "$VIYA_NS" sas-java-services
+  kubectl delete --ignore-not-found ServiceMonitor -n "$VIYA_NS" sas-go-services
+  kubectl delete --ignore-not-found ServiceMonitor -n "$VIYA_NS" sas-deployment-operator
 else
   log_warn "Prometheus Operator not found. Skipping deployment of ServiceMonitors."
 fi
 
 # If a deployment with the old name exists, remove it first
-if helm3ReleaseExists "v4m-viya" $VIYA_NS; then
+if helm3ReleaseExists "v4m-viya" "$VIYA_NS"; then
   log_verbose "Removing outdated SAS Viya Monitoring Helm chart release from [$VIYA_NS] namespace"
   helm uninstall -n "$VIYA_NS" "v4m-viya"
 fi

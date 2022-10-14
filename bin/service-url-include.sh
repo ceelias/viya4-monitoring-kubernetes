@@ -28,7 +28,7 @@ function get_k8s_info {
   object=$2
   jsonpath=$3
 
-  info=$(kubectl -n "$namespace" get "$object" -o=jsonpath=$jsonpath 2>/dev/null)
+  info=$(kubectl -n "$namespace" get "$object" -o=jsonpath="$jsonpath" 2>/dev/null)
   rc=$?
 
   if [ ! -z "$info" ]; then
@@ -64,7 +64,7 @@ function get_ingress_url {
   namespace=$1
   name=$2
 
-  if [ ! "$(kubectl -n $namespace get ingress/$name 2>/dev/null)" ]; then
+  if [ ! "$(kubectl -n "$namespace" get ingress/"$name" 2>/dev/null)" ]; then
     # ingress object does not exist
     v4m_rc=1
     echo ""
@@ -140,7 +140,7 @@ function get_nodeport_url {
   service=$2
   tls_enabled=$3
 
-  if [ ! "$(kubectl -n $namespace get service/$service 2>/dev/null)" ]; then
+  if [ ! "$(kubectl -n "$namespace" get service/"$service" 2>/dev/null)" ]; then
     # ingress object does not exist
     v4m_rc=1
     echo ""
@@ -177,8 +177,8 @@ function get_service_url {
   ingress=${4:-${service}} # (optional) name of ingress/route object (default: $service)
 
   # is a route defined for this service?
-  if [ "$OPENSHIFT_CLUSTER" == "true" ] && [ "$(kubectl -n $namespace get route/$service 2>/dev/null)" ]; then
-    url=$(get_route_url $namespace $service)
+  if [ "$OPENSHIFT_CLUSTER" == "true" ] && [ "$(kubectl -n "$namespace" get route/"$service" 2>/dev/null)" ]; then
+    url=$(get_route_url "$namespace" "$service")
 
     if [ -z "$url" ]; then
       v4m_rc=1
@@ -196,7 +196,7 @@ function get_service_url {
   if [ "$service_type" == "ClusterIP" ]; then
     get_ingress_ports
 
-    url=$(get_ingress_url $namespace $ingress)
+    url=$(get_ingress_url "$namespace" "$ingress")
 
     if [ -z "$url" ]; then
       v4m_rc=1
@@ -206,7 +206,7 @@ function get_service_url {
       echo "$url"
     fi
   elif [ "$service_type" == "NodePort" ]; then
-    url=$(get_nodeport_url $namespace $service $use_tls)
+    url=$(get_nodeport_url "$namespace" "$service" "$use_tls")
 
     if [ -z "$url" ]; then
       v4m_rc=1

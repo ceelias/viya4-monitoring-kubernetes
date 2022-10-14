@@ -3,7 +3,7 @@
 # Copyright © 2022, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.." || exit
 source logging/bin/common.sh
 
 # Confirm NOT on OpenShift
@@ -22,8 +22,8 @@ LOG_DELETE_NAMESPACE_ON_REMOVE=${LOG_DELETE_NAMESPACE_ON_REMOVE:-false}
 
 ##29MAR22: TODO: Remove this section?
 # Check for existing incompatible helm releases up front
-helm2ReleaseCheck odfe-$LOG_NS
-helm2ReleaseCheck es-exporter-$LOG_NS
+helm2ReleaseCheck odfe-"$LOG_NS"
+helm2ReleaseCheck es-exporter-"$LOG_NS"
 
 log_notice "Removing logging components from the [$LOG_NS] namespace [$(date)]"
 
@@ -39,17 +39,17 @@ logging/bin/remove_eventrouter.sh
 
 if [ "$LOG_DELETE_PVCS_ON_REMOVE" == "true" ]; then
   log_verbose "Removing known logging PVCs..."
-  kubectl delete pvc --ignore-not-found -n $LOG_NS -l app.kubernetes.io/name=opensearch
+  kubectl delete pvc --ignore-not-found -n "$LOG_NS" -l app.kubernetes.io/name=opensearch
 fi
 
 if [ "$LOG_DELETE_SECRETS_ON_REMOVE" == "true" ]; then
   log_verbose "Removing known logging secrets..."
-  kubectl delete secret --ignore-not-found -n $LOG_NS -l managed-by=v4m-es-script
+  kubectl delete secret --ignore-not-found -n "$LOG_NS" -l managed-by=v4m-es-script
 fi
 
 if [ "$LOG_DELETE_CONFIGMAPS_ON_REMOVE" == "true" ]; then
   log_verbose "Removing known logging configmaps..."
-  kubectl delete configmap --ignore-not-found -n $LOG_NS -l managed-by=v4m-es-script
+  kubectl delete configmap --ignore-not-found -n "$LOG_NS" -l managed-by=v4m-es-script
 fi
 
 # Check for and remove any v4m deployments with old naming convention
@@ -59,7 +59,7 @@ removeV4MInfo "$LOG_NS" "v4m-logs"
 
 if [ "$LOG_DELETE_NAMESPACE_ON_REMOVE" == "true" ]; then
   log_info "Deleting the [$LOG_NS] namespace..."
-  if kubectl delete namespace $LOG_NS --timeout $KUBE_NAMESPACE_DELETE_TIMEOUT; then
+  if kubectl delete namespace "$LOG_NS" --timeout "$KUBE_NAMESPACE_DELETE_TIMEOUT"; then
     log_info "[$LOG_NS] namespace and logging components successfully removed"
     exit 0
   else
@@ -75,7 +75,7 @@ log_info "Checking contents of the [$LOG_NS] namespace:"
 objects=(all pvc secret configmap)
 empty="true"
 for object in "${objects[@]}"; do
-  out=$(kubectl get -n $LOG_NS $object 2>&1)
+  out=$(kubectl get -n "$LOG_NS" "$object" 2>&1)
   if [[ "$out" =~ 'No resources found' ]]; then
     :
   else

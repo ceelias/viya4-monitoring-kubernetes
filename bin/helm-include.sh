@@ -12,7 +12,7 @@ if [ ! $(which helm) ]; then
 fi
 
 helmVer=$(helm version --short 2>/dev/null)
-hver=($(echo ${helmVer//[^0-9]/ }))
+hver=($(echo "${helmVer//[^0-9]/ }"))
 HELM_VER_MAJOR=${hver[0]}
 HELM_VER_MINOR=${hver[1]}
 HELM_VER_PATCH=${hver[2]}
@@ -40,7 +40,7 @@ function helm3ReleaseExists {
   release=$1
   namespace=$2
   log_debug "Checking for Helm 3.x release of [$release]"
-  releases=$(kubectl get secret -n $namespace -l name=$release,owner=helm -o name)
+  releases=$(kubectl get secret -n "$namespace" -l name="$release",owner=helm -o name)
   if [[ $releases =~ secret/sh\.helm\.release\.v1\.$release\.v[0-9]+ ]]; then
     log_debug "A Helm 3.x release of [$release] exists"
     return 0
@@ -52,7 +52,7 @@ function helm3ReleaseExists {
 function helm2ReleaseCheck {
   if [ "$HELM_RELEASE_CHECK" != "false" ]; then
     release=$1
-    if helm2ReleaseExists $release; then
+    if helm2ReleaseExists "$release"; then
       log_error "A Helm 2.x release of [$release] already exists"
       log_error "Helm [$HELM_VER_FULL] cannot manage the Helm 2.x release of [$release]"
       exit 1
@@ -66,24 +66,24 @@ function helmRepoAdd {
   HELM_FORCE_REPO_UPDATE=${HELM_FORCE_REPO_UPDATE:-true}
   if [[ ! $(helm repo list 2>/dev/null) =~ $repo[[:space:]] ]]; then
     log_info "Adding [$repo] helm repository"
-    helm repo add $repo $repoURL
+    helm repo add "$repo" "$repoURL"
   else
     log_debug "The helm repo [$repo] already exists"
     if [ "$HELM_FORCE_REPO_UPDATE" == "true" ]; then
       log_debug "Forcing update of [$repo] helm repo to [$repoURL]"
       # Helm 3.3.2 changed 'repo add' behavior and added the --force-update flag
       # https://github.com/helm/helm/releases/tag/v3.3.2
-      if [ $HELM_VER_MINOR -lt 3 ]; then
-        helm repo add $repo $repoURL
-      elif [ $HELM_VER_MINOR -eq 3 ]; then
-        if [ $HELM_VER_PATCH -lt 2 ]; then
-          helm repo add $repo $repoURL
+      if [ "$HELM_VER_MINOR" -lt 3 ]; then
+        helm repo add "$repo" "$repoURL"
+      elif [ "$HELM_VER_MINOR" -eq 3 ]; then
+        if [ "$HELM_VER_PATCH" -lt 2 ]; then
+          helm repo add "$repo" "$repoURL"
         else
-          helm repo add --force-update $repo $repoURL
+          helm repo add --force-update "$repo" "$repoURL"
         fi
       else
         # Helm 2.x behavior is to replace by default
-        helm repo add $repo $repoURL
+        helm repo add "$repo" "$repoURL"
       fi
     fi
   fi

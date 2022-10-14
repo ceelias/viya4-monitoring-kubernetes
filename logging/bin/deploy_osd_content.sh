@@ -3,7 +3,7 @@
 # Copyright © 2020, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.."
 source logging/bin/common.sh
 source logging/bin/secrets-include.sh
 source bin/service-url-include.sh
@@ -28,7 +28,7 @@ require_opensearch
 tmpfile=$TMP_DIR/output.txt
 
 # Confirm namespace exists
-if [ "$(kubectl get ns $LOG_NS -o name 2>/dev/null)" == "" ]; then
+if [ "$(kubectl get ns "$LOG_NS" -o name 2>/dev/null)" == "" ]; then
   log_error "Namespace [$LOG_NS] does NOT exist."
   exit 1
 fi
@@ -60,7 +60,7 @@ log_info "Configuring OpenSearch Dashboards...this may take a few minutes"
 
 # wait for pod to show as "running" and "ready"
 log_info "Waiting for OpenSearch Dashboards pods to be ready ($(date) - timeout 10m)"
-kubectl -n $LOG_NS wait pods --selector "app=opensearch-dashboards" --for condition=Ready --timeout=10m
+kubectl -n "$LOG_NS" wait pods --selector "app=opensearch-dashboards" --for condition=Ready --timeout=10m
 
 set +e # disable exit on error
 
@@ -70,7 +70,7 @@ set +e # disable exit on error
 for pause in 30 30 60 30 30 30 30 30 30; do
 
   get_kb_api_url
-  response=$(curl -s -o /dev/null -w "%{http_code}" -XGET "${kb_api_url}/api/status" --user $ES_ADMIN_USER:$ES_ADMIN_PASSWD --insecure)
+  response=$(curl -s -o /dev/null -w "%{http_code}" -XGET "${kb_api_url}/api/status" --user "$ES_ADMIN_USER":"$ES_ADMIN_PASSWD" --insecure)
   # returns 503 (and outputs "Kibana server is not ready yet") when Kibana isn't ready yet
   # TO DO: check for 503 specifically?
   rc=$?
@@ -133,15 +133,15 @@ if [ -f "$KB_GLOBAL_EXPORT_FILE" ]; then
   kb_migrate_response="$TMP_DIR/kb_migrate_response.json"
 
   #import previously exported content from global tenant
-  response=$(curl -s -o $kb_migrate_response -w "%{http_code}" -XPOST "${kb_api_url}/api/saved_objects/_import?overwrite=false" -H "$LOG_XSRF_HEADER" -H 'securitytenant: cluster_admins' --form file="@$KB_GLOBAL_EXPORT_FILE" -u $ES_ADMIN_USER:$ES_ADMIN_PASSWD -k)
+  response=$(curl -s -o "$kb_migrate_response" -w "%{http_code}" -XPOST "${kb_api_url}/api/saved_objects/_import?overwrite=false" -H "$LOG_XSRF_HEADER" -H 'securitytenant: cluster_admins' --form file="@$KB_GLOBAL_EXPORT_FILE" -u "$ES_ADMIN_USER":"$ES_ADMIN_PASSWD" -k)
 
   if [[ $response != 2* ]]; then
     log_warn "There was an issue importing the cached existing content into the OpenSearch Dashboards tenant space [cluster_admins]. [$response]"
     log_warn "Some of your existing content may need to be recreated or restored from your backup files."
-    log_debug "Failed response details: $(tail -n1 $kb_migrate_response)"
+    log_debug "Failed response details: $(tail -n1 "$kb_migrate_response")"
   else
     log_info "Existing content imported to [cluster_admins] OpenSearh Dashboards tenant space. [$response]"
-    log_debug "Import details: $(tail -n1 $kb_migrate_response)"
+    log_debug "Import details: $(tail -n1 "$kb_migrate_response")"
   fi
 else
   log_debug "Migration from ODFE 1.7.0 *NOT* detected"

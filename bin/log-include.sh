@@ -31,13 +31,13 @@ if [ "$LOG_VERBOSE_ENABLE" != "true" ]; then
 fi
 
 function add_notice {
-  echo $* >>$TMP_DIR/notices.txt
+  echo "$*" >>"$TMP_DIR"/notices.txt
 }
 
 function display_notices {
   if [ -f "$TMP_DIR/notices.txt" ]; then
     IFS=''
-    cat $TMP_DIR/notices.txt | while read line || [[ -n "$line" ]]; do
+    cat "$TMP_DIR"/notices.txt | while read line || [[ -n "$line" ]]; do
       log_notice "$line"
     done
   fi
@@ -46,7 +46,7 @@ function display_notices {
 function log_notice {
   width=$noticeColWidth
   n=$(expr $width - $(echo "$1" | wc -c))
-  if [ $n -lt 0 ]; then
+  if [ "$n" -lt 0 ]; then
     n=0
   fi
   # Fill remaining characters with spaces
@@ -95,7 +95,7 @@ function log_info {
 # The value of LOG_VERBOSE_ENABLE determines whether they are displayed
 function log_verbose {
   if [ "$LOG_VERBOSE_ENABLE" == "true" ]; then
-    log_info $* >&3
+    log_info "$*" >&3
   fi
 }
 

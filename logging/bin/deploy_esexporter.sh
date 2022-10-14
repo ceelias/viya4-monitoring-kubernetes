@@ -3,7 +3,7 @@
 # Copyright © 2020, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.."
 source logging/bin/common.sh
 source logging/bin/secrets-include.sh
 
@@ -28,7 +28,7 @@ log_info "Deploying Elasticsearch metric exporter ..."
 # check for pre-reqs
 
 # Confirm namespace exists
-if [ "$(kubectl get ns $LOG_NS -o name 2>/dev/null)" == "" ]; then
+if [ "$(kubectl get ns "$LOG_NS" -o name 2>/dev/null)" == "" ]; then
   log_error "Namespace [$LOG_NS] does NOT exist."
   exit 1
 fi
@@ -41,11 +41,11 @@ if [ "$rc" != "0" ]; then
   exit $rc
 fi
 
-if helm3ReleaseExists es-exporter $LOG_NS; then
+if helm3ReleaseExists es-exporter "$LOG_NS"; then
   #remove an existing instance if it does NOT target OPENSEARCH (i.e. targets ODFE)
-  if [ -z $(kubectl -n $LOG_NS get pods -l "app=prometheus-elasticsearch-exporter,searchbackend=opensearch" -o name 2>/dev/null) ]; then
+  if [ -z $(kubectl -n "$LOG_NS" get pods -l "app=prometheus-elasticsearch-exporter,searchbackend=opensearch" -o name 2>/dev/null) ]; then
     log_debug "Removing an outdated version of Helm release [es-exporter]"
-    helm -n $LOG_NS delete es-exporter
+    helm -n "$LOG_NS" delete es-exporter
   fi
 else
   log_debug "No existing Helm release [es-exporter] found."
@@ -95,14 +95,14 @@ else
 fi
 
 # Elasticsearch metric exporter
-helm2ReleaseCheck es-exporter-$LOG_NS
+helm2ReleaseCheck es-exporter-"$LOG_NS"
 
 helm $helmDebug upgrade --install es-exporter \
-  --namespace $LOG_NS \
+  --namespace "$LOG_NS" \
   -f $primaryValuesFile \
-  -f $wnpValuesFile \
-  -f $openshiftValuesFile \
-  -f $ES_OPEN_EXPORTER_USER_YAML \
+  -f "$wnpValuesFile" \
+  -f "$openshiftValuesFile" \
+  -f "$ES_OPEN_EXPORTER_USER_YAML" \
   prometheus-community/prometheus-elasticsearch-exporter \
   --set fullnameOverride=v4m-es-exporter
 

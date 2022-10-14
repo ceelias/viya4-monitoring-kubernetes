@@ -3,7 +3,7 @@
 # Copyright © 20201, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.." || exit
 CHECK_HELM=false
 CHECK_KUBERNETES=false
 
@@ -128,7 +128,7 @@ while (("$#")); do
   case "$1" in
     # basic query parms
     -n | --namespace)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         namespace=$2
         shift 2
       else
@@ -139,7 +139,7 @@ while (("$#")); do
       ;;
 
     -nx | --namespace-exclude | -xn)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         namespace_exclude=$2
         shift 2
       else
@@ -151,7 +151,7 @@ while (("$#")); do
 
     \
       -p | --pod)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         pod=$2
         shift 2
       else
@@ -161,7 +161,7 @@ while (("$#")); do
       fi
       ;;
     -px | --pod-exclude | -xp)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         pod_exclude=$2
         shift 2
       else
@@ -171,7 +171,7 @@ while (("$#")); do
       fi
       ;;
     -c | --container)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         container=$2
         shift 2
       else
@@ -181,7 +181,7 @@ while (("$#")); do
       fi
       ;;
     -cx | --container-exclude | -xc)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         container_exclude=$2
         shift 2
       else
@@ -191,7 +191,7 @@ while (("$#")); do
       fi
       ;;
     -s | --logsource)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         logsource=$2
         shift 2
       else
@@ -201,7 +201,7 @@ while (("$#")); do
       fi
       ;;
     -sx | --logsource-exclude | -xs)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         logsource_exclude=$2
         shift 2
       else
@@ -211,7 +211,7 @@ while (("$#")); do
       fi
       ;;
     --search)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         search_string=$2
         shift 2
       else
@@ -221,7 +221,7 @@ while (("$#")); do
       fi
       ;;
     -l | --level)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         msglevel=$2
         shift 2
       else
@@ -231,7 +231,7 @@ while (("$#")); do
       fi
       ;;
     -lx | --level-exclude | -xl)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         level_exclude=$2
         shift 2
       else
@@ -241,7 +241,7 @@ while (("$#")); do
       fi
       ;;
     -m | --max | --maxrows | --max-rows)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         maxrows=$2
         shift 2
       else
@@ -251,7 +251,7 @@ while (("$#")); do
       fi
       ;;
     -q | --query-file)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         query_file=$2
         shift 2
       else
@@ -262,7 +262,7 @@ while (("$#")); do
       ;;
     # datetime parms
     --start)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         start_dt=$2
         shift 2
       else
@@ -272,7 +272,7 @@ while (("$#")); do
       fi
       ;;
     --end)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         end_dt=$2
         shift 2
       else
@@ -284,7 +284,7 @@ while (("$#")); do
 
     # output parms
     -o | --out-file)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         target_file=$2
         shift 2
       else
@@ -298,7 +298,7 @@ while (("$#")); do
       shift
       ;;
     --fields)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         output_vars=$2
         shift 2
       else
@@ -310,7 +310,7 @@ while (("$#")); do
 
     # connection info parms
     -us | --user)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         username=$2
         shift 2
       else
@@ -320,7 +320,7 @@ while (("$#")); do
       fi
       ;;
     -pw | --password)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         password=$2
         shift 2
       else
@@ -330,7 +330,7 @@ while (("$#")); do
       fi
       ;;
     -ho | --host)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         host=$2
         shift 2
       else
@@ -340,7 +340,7 @@ while (("$#")); do
       fi
       ;;
     -po | --port)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         port=$2
         shift 2
       else
@@ -350,7 +350,7 @@ while (("$#")); do
       fi
       ;;
     -pr | --protocol)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         protocol=$2
         shift 2
       else
@@ -412,7 +412,7 @@ fi
 
 if [ ! -z "$target_file" ]; then
 
-  dir=$(dirname $target_file)
+  dir=$(dirname "$target_file")
   if [ ! -d "$dir" ]; then
     log_error "The directory [$dir] specified for the output file does not exist"
     exit 1
@@ -423,7 +423,7 @@ if [ ! -z "$target_file" ]; then
     log_error "Delete the file, use the --force option or specify an different output file and re-run this command."
     exit 1
   else
-    echo -n "" >$target_file
+    echo -n "" >"$target_file"
   fi
 fi
 
@@ -462,7 +462,7 @@ fi
 log_debug "Connection options PROTOCOL: $protocol HOST: $host PORT: $port  USERNAME: $username"
 
 # Validate Connection information
-response=$(curl -m 60 -s -o /dev/null -w "%{http_code}" -XGET "$protocol://$host:$port/" --user $username:$password -k)
+response=$(curl -m 60 -s -o /dev/null -w "%{http_code}" -XGET "$protocol://$host:$port/" --user "$username":"$password" -k)
 rc=$?
 if [[ $response != 2* ]]; then
 
@@ -533,13 +533,13 @@ else
   query_file="$TMP_DIR/query.json"
 
   #initialize query file
-  echo -n "" >$query_file
+  echo -n "" >"$query_file"
 
   #start JSON
-  echo -n '{"query":"' >>$query_file
+  echo -n '{"query":"' >>"$query_file"
 
   #build SELECT clause
-  echo -n "select $output_vars " >>$query_file
+  echo -n "select $output_vars " >>"$query_file"
 
   if [ "$OPS_INDEX" == "true" ]; then
     index_name="viya_ops-*"
@@ -547,38 +547,38 @@ else
     index_name="viya_logs-*"
   fi
 
-  echo -n " from $index_name " >>$query_file
+  echo -n " from $index_name " >>"$query_file"
 
   #WHERE clauses
-  echo -n " where 1 = 1 " >>$query_file # dummy always true
+  echo -n " where 1 = 1 " >>"$query_file" # dummy always true
 
-  if [ ! -z "$namespace" ]; then echo -n " $(silly_ors kube.namespace $namespace) " >>$query_file; fi
-  if [ ! -z "$namespace_exclude" ]; then echo -n " $(silly_ands kube.namespace $namespace_exclude) " >>$query_file; fi
-  if [ ! -z "$logsource" ]; then echo -n " $(silly_ors logsource $logsource)" >>$query_file; fi
-  if [ ! -z "$logsource_exclude" ]; then echo -n " $(silly_ands logsource $logsource_exclude)" >>$query_file; fi
-  if [ ! -z "$pod" ]; then echo -n " $(silly_ors kube.pod $pod)" >>$query_file; fi
-  if [ ! -z "$pod_exclude" ]; then echo -n " $(silly_ands kube.podt $pod_exclude)" >>$query_file; fi
-  if [ ! -z "$container" ]; then echo -n " $(silly_ors kube.container $container)" >>$query_file; fi
-  if [ ! -z "$container_exclude" ]; then echo -n " $(silly_ands kube.container $container_exclude)" >>$query_file; fi
-  if [ ! -z "$msglevel" ]; then echo -n " $(silly_ors level $msglevel)" >>$query_file; fi
-  if [ ! -z "$level_exclude" ]; then echo -n " $(silly_ands level $level_exclude)" >>$query_file; fi
+  if [ ! -z "$namespace" ]; then echo -n " $(silly_ors kube.namespace "$namespace") " >>"$query_file"; fi
+  if [ ! -z "$namespace_exclude" ]; then echo -n " $(silly_ands kube.namespace "$namespace_exclude") " >>"$query_file"; fi
+  if [ ! -z "$logsource" ]; then echo -n " $(silly_ors logsource "$logsource")" >>"$query_file"; fi
+  if [ ! -z "$logsource_exclude" ]; then echo -n " $(silly_ands logsource "$logsource_exclude")" >>"$query_file"; fi
+  if [ ! -z "$pod" ]; then echo -n " $(silly_ors kube.pod "$pod")" >>"$query_file"; fi
+  if [ ! -z "$pod_exclude" ]; then echo -n " $(silly_ands kube.podt "$pod_exclude")" >>"$query_file"; fi
+  if [ ! -z "$container" ]; then echo -n " $(silly_ors kube.container "$container")" >>"$query_file"; fi
+  if [ ! -z "$container_exclude" ]; then echo -n " $(silly_ands kube.container "$container_exclude")" >>"$query_file"; fi
+  if [ ! -z "$msglevel" ]; then echo -n " $(silly_ors level "$msglevel")" >>"$query_file"; fi
+  if [ ! -z "$level_exclude" ]; then echo -n " $(silly_ands level "$level_exclude")" >>"$query_file"; fi
 
-  if [ ! -z "$search_string" ]; then echo -n " and multi_match('$search_string')" >>$query_file; fi
+  if [ ! -z "$search_string" ]; then echo -n " and multi_match('$search_string')" >>"$query_file"; fi
 
-  if [ ! -z "$start_date" ]; then echo -n " and @timestamp >= timestamp('$start_date')" >>$query_file; fi
-  if [ ! -z "$end_date" ]; then echo -n " and @timestamp <  timestamp('$end_date')" >>$query_file; fi
+  if [ ! -z "$start_date" ]; then echo -n " and @timestamp >= timestamp('$start_date')" >>"$query_file"; fi
+  if [ ! -z "$end_date" ]; then echo -n " and @timestamp <  timestamp('$end_date')" >>"$query_file"; fi
 
-  echo -n " order by @timestamp DESC " >>$query_file
+  echo -n " order by @timestamp DESC " >>"$query_file"
 
-  if [ ! -z "$maxrows" ]; then echo -n " limit $maxrows" >>$query_file; fi
+  if [ ! -z "$maxrows" ]; then echo -n " limit $maxrows" >>"$query_file"; fi
 
-  echo -n ';"}' >>$query_file #close json
-  echo '' >>$query_file
+  echo -n ';"}' >>"$query_file" #close json
+  echo '' >>"$query_file"
 fi
 
 if [ "$showquery" == "true" ]; then
   log_info "The following query will be submitted."
-  cat $query_file
+  cat "$query_file"
 fi
 
 maxtime=${ESQUERY_MAXTIME:-180}
@@ -599,7 +599,7 @@ else
   ES_PLUGINS_DIR=_opendistro
 fi
 
-response=$(curl -m $maxtime -s -o $qresults_file -w "%{http_code}" -XPOST "$protocol://$host:$port/$ES_PLUGINS_DIR/_sql?format=$format" -H 'Content-Type: application/json' -d @$query_file $output_txt --user $username:$password -k)
+response=$(curl -m "$maxtime" -s -o "$qresults_file" -w "%{http_code}" -XPOST "$protocol://$host:$port/$ES_PLUGINS_DIR/_sql?format=$format" -H 'Content-Type: application/json' -d @"$query_file" "$output_txt" --user "$username":"$password" -k)
 rc=$?
 
 log_debug "curl (query submission) command response: [$response] rc:[$rc]"
@@ -614,7 +614,7 @@ if [[ $response != 2* ]]; then
     exit 2
   else
     # IndexNotFoundException should return 404 but doesn't
-    if [ $(grep -c "IndexNotFoundException" $qresults_file) -gt 0 ]; then
+    if [ $(grep -c "IndexNotFoundException" "$qresults_file") -gt 0 ]; then
       log_debug "IndexNotFoundException found in query response"
       queryfailed="true"
     else
@@ -624,7 +624,7 @@ if [[ $response != 2* ]]; then
     fi                                                                  # IndexNotFoundException
   fi
 else # handle 2** response
-  lines_returned=$(cat $qresults_file | wc -l)
+  lines_returned=$(cat "$qresults_file" | wc -l)
   queryfailed="false"
 fi
 
@@ -634,11 +634,11 @@ if [ "$queryfailed" == "true" ]; then
   log_warn "There were issues getting the requested log messages; the query returned an unexpected response code."
   log_warn "These unexpected response returned the following message(s):"
 
-  cat $qresults_file
+  cat "$qresults_file"
 else
   # query did not fail
 
-  if [ $lines_returned -eq 0 ]; then
+  if [ "$lines_returned" -eq 0 ]; then
     log_info "No log messages meeting the specified criteria were found."
     exit 0
   else
@@ -646,9 +646,9 @@ else
 
     if [ "$output_file_specified" == "true" ]; then
       log_info "Output results (approx. $lines_returned) written to requested output file [$target_file]"
-      tail -n +1 ${qresults_file} >>$target_file
+      tail -n +1 "${qresults_file}" >>"$target_file"
     else
-      tail -n +1 ${qresults_file}
+      tail -n +1 "${qresults_file}"
       echo "" # add line break after any output
     fi
   fi

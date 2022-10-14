@@ -39,38 +39,38 @@ function deploy_issuers {
 
   # Create issuers if needed
   # Issuers honor USER_DIR for overrides/customizations
-  if [ -z "$(kubectl get issuer -n $namespace selfsigning-issuer -o name 2>/dev/null)" ]; then
+  if [ -z "$(kubectl get issuer -n "$namespace" selfsigning-issuer -o name 2>/dev/null)" ]; then
     log_info "Creating selfsigning-issuer for the [$namespace] namespace..."
     selfsignIssuer=$context/tls/selfsigning-issuer.yaml
     if [ -f "$USER_DIR/$context/tls/selfsigning-issuer.yaml" ]; then
       selfsignIssuer="$USER_DIR/$context/tls/selfsigning-issuer.yaml"
     fi
     log_debug "Self-sign issuer yaml is [$selfsignIssuer]"
-    kubectl apply -n $namespace -f "$selfsignIssuer"
+    kubectl apply -n "$namespace" -f "$selfsignIssuer"
     sleep 5
   else
     log_debug "Using existing $namespace/selfsigning-issuer"
   fi
-  if [ -z "$(kubectl get secret -n $namespace ca-certificate-secret -o name 2>/dev/null)" ]; then
+  if [ -z "$(kubectl get secret -n "$namespace" ca-certificate-secret -o name 2>/dev/null)" ]; then
     log_info "Creating self-signed CA certificate for the [$namespace] namespace..."
     caCert=$context/tls/ca-certificate.yaml
     if [ -f "$USER_DIR/$context/tls/ca-certificate.yaml" ]; then
       caCert="$USER_DIR/$context/tls/ca-certificate.yaml"
     fi
     log_debug "CA cert yaml file is [$caCert]"
-    kubectl apply -n $namespace -f "$caCert"
+    kubectl apply -n "$namespace" -f "$caCert"
     sleep 5
   else
     log_debug "Using existing $namespace/ca-certificate-secret"
   fi
-  if [ -z "$(kubectl get issuer -n $namespace namespace-issuer -o name 2>/dev/null)" ]; then
+  if [ -z "$(kubectl get issuer -n "$namespace" namespace-issuer -o name 2>/dev/null)" ]; then
     log_info "Creating namespace-issuer for the [$namespace] namespace..."
     namespaceIssuer=$context/tls/namespace-issuer.yaml
     if [ -f "$USER_DIR/$context/tls/namespace-issuer.yaml" ]; then
       namespaceIssuer="$USER_DIR/$context/tls/namespace-issuer.yaml"
     fi
     log_debug "Namespace issuer yaml is [$namespaceIssuer]"
-    kubectl apply -n $namespace -f "$namespaceIssuer"
+    kubectl apply -n "$namespace" -f "$namespaceIssuer"
     sleep 5
   else
     log_debug "Using existing $namespace/namespace-issuer"
@@ -90,7 +90,7 @@ function deploy_app_cert {
     certyaml="$USER_DIR/$context/tls/$app-tls-cert.yaml"
   fi
   log_debug "Creating cert-manager certificate custom resource for [$app] using [$certyaml]"
-  kubectl apply -n $namespace -f "$certyaml"
+  kubectl apply -n "$namespace" -f "$certyaml"
 }
 
 function create_tls_certs_cm {
@@ -104,9 +104,9 @@ function create_tls_certs_cm {
   for app in "${apps[@]}"; do
     # Only create the secrets if they do not exist
     TLS_SECRET_NAME=$app-tls-secret
-    if [ -z "$(kubectl get secret -n $namespace $TLS_SECRET_NAME -o name 2>/dev/null)" ]; then
+    if [ -z "$(kubectl get secret -n "$namespace" "$TLS_SECRET_NAME" -o name 2>/dev/null)" ]; then
       if [ "$deployedIssuers" == "false" ]; then
-        deploy_issuers $namespace $context
+        deploy_issuers "$namespace" "$context"
         deployedIssuers="true"
       fi
       deploy_app_cert "$namespace" "$context" "$app"
@@ -124,9 +124,9 @@ function create_tls_certs {
   apps=("$@")
 
   if [ "$CERT_GENERATOR" == "cert-manager" ]; then
-    create_tls_certs_cm $namespace $context ${apps[@]}
+    create_tls_certs_cm "$namespace" "$context" ${apps[@]}
   elif [ "$CERT_GENERATOR" == "openssl" ]; then
-    create_tls_certs_openssl $namespace ${apps[@]}
+    create_tls_certs_openssl "$namespace" ${apps[@]}
   else
     log_error "Unknown TLS Certificate Generator [$cert-generator] requested."
     return 1
@@ -142,7 +142,7 @@ function do_all_secrets_already_exist {
 
   for app in "${apps[@]}"; do
     secretName=$app-tls-secret
-    if [ -z "$(kubectl get secret -n $namespace $secretName -o name 2>/dev/null)" ]; then
+    if [ -z "$(kubectl get secret -n "$namespace" "$secretName" -o name 2>/dev/null)" ]; then
       log_debug "Secret [$namespace/$secretName] not found. Certificate generation is required."
       all_secrets_exist="false"
       break
@@ -231,14 +231,14 @@ function create_cert_secret {
   fi
   log_debug "Storing TLS Cert for [$app] in secret [$secretName] in namespace [$namespace]"
 
-  expiration_date=$(openssl x509 -enddate -noout -in $TMP_DIR/${app}.pem | awk -F "=" '{print $2}')
+  expiration_date=$(openssl x509 -enddate -noout -in "$TMP_DIR"/"${app}".pem | awk -F "=" '{print $2}')
   # Secret Type: TLS (two sub-parts: cert + key)
   #kubectl -n $namespace create secret tls $secretName --cert $TMP_DIR/${app}.pem --key $TMP_DIR/${app}-key.pem
 
   # Secret Type: GENERIC (3 sub-parts: cert + key + CACert)
-  kubectl -n $namespace create secret generic $secretName --from-file=tls.crt=$TMP_DIR/${app}.pem --from-file=tls.key=$TMP_DIR/${app}-key.pem --from-file=ca.crt=$TMP_DIR/root-ca.pem
-  kubectl -n $namespace annotate secret $secretName expiration="$expiration_date"
-  kubectl -n $namespace label secret $secretName managed-by="v4m" cert-generator="openssl"
+  kubectl -n "$namespace" create secret generic "$secretName" --from-file=tls.crt="$TMP_DIR"/"${app}".pem --from-file=tls.key="$TMP_DIR"/"${app}"-key.pem --from-file=ca.crt="$TMP_DIR"/root-ca.pem
+  kubectl -n "$namespace" annotate secret "$secretName" expiration="$expiration_date"
+  kubectl -n "$namespace" label secret "$secretName" managed-by="v4m" cert-generator="openssl"
 
 }
 
@@ -253,24 +253,24 @@ function create_tls_certs_openssl {
   for app in "${apps[@]}"; do
     secretName="${app}-tls-secret"
 
-    if [ -n "$(kubectl get secret -n $namespace $secretName -o name 2>/dev/null)" ]; then
+    if [ -n "$(kubectl get secret -n "$namespace" "$secretName" -o name 2>/dev/null)" ]; then
       log_debug "TLS Secret for [$app] already exists; skipping TLS certificate generation."
       continue
     fi
 
-    if [ ! -f $TMP_DIR/root-ca-key.pem ]; then
+    if [ ! -f "$TMP_DIR"/root-ca-key.pem ]; then
 
-      if [ -n "$(kubectl get secret -n $namespace v4m-root-ca-tls-secret -o name 2>/dev/null)" ]; then
+      if [ -n "$(kubectl get secret -n "$namespace" v4m-root-ca-tls-secret -o name 2>/dev/null)" ]; then
         log_debug "Extracting Root CA cert from secret [v4m-root-ca-tls-secret]"
-        kubectl -n $namespace get secret v4m-root-ca-tls-secret -o=jsonpath="{.data.tls\.crt}" | base64 --decode >$TMP_DIR/root-ca.pem
-        kubectl -n $namespace get secret v4m-root-ca-tls-secret -o=jsonpath="{.data.tls\.key}" | base64 --decode >$TMP_DIR/root-ca-key.pem
+        kubectl -n "$namespace" get secret v4m-root-ca-tls-secret -o=jsonpath="{.data.tls\.crt}" | base64 --decode >"$TMP_DIR"/root-ca.pem
+        kubectl -n "$namespace" get secret v4m-root-ca-tls-secret -o=jsonpath="{.data.tls\.key}" | base64 --decode >"$TMP_DIR"/root-ca-key.pem
       else
         log_debug "Creating Root CA cert using OpenSSL"
         cert_subject="/O=v4m/CN=rootca"
-        openssl genrsa -out $TMP_DIR/root-ca-key.pem 4096 2>/dev/null
-        openssl req -new -x509 -sha256 -key $TMP_DIR/root-ca-key.pem -subj "$cert_subject" -out $TMP_DIR/root-ca.pem -days $cert_life
+        openssl genrsa -out "$TMP_DIR"/root-ca-key.pem 4096 2>/dev/null
+        openssl req -new -x509 -sha256 -key "$TMP_DIR"/root-ca-key.pem -subj "$cert_subject" -out "$TMP_DIR"/root-ca.pem -days "$cert_life"
 
-        create_cert_secret $namespace root-ca v4m-root-ca-tls-secret
+        create_cert_secret "$namespace" root-ca v4m-root-ca-tls-secret
       fi
 
     else
@@ -279,12 +279,12 @@ function create_tls_certs_openssl {
 
     log_debug "Creating TLS Cert for [$app] using OpenSSL"
     cert_subject="/O=v4m/CN=$app"
-    openssl genrsa -out $TMP_DIR/${app}-key-temp.pem 4096 2>/dev/null
-    openssl pkcs8 -inform PEM -outform PEM -in $TMP_DIR/${app}-key-temp.pem -topk8 -nocrypt -v1 PBE-SHA1-3DES -out $TMP_DIR/${app}-key.pem
-    openssl req -new -key $TMP_DIR/${app}-key.pem -subj "$cert_subject" -out $TMP_DIR/${app}.csr
-    openssl x509 -req -in $TMP_DIR/${app}.csr -CA $TMP_DIR/root-ca.pem -CAkey $TMP_DIR/root-ca-key.pem -CAcreateserial -CAserial $TMP_DIR/ca.srl -sha256 -out $TMP_DIR/${app}.pem -days $cert_life 2>/dev/null
+    openssl genrsa -out "$TMP_DIR"/"${app}"-key-temp.pem 4096 2>/dev/null
+    openssl pkcs8 -inform PEM -outform PEM -in "$TMP_DIR"/"${app}"-key-temp.pem -topk8 -nocrypt -v1 PBE-SHA1-3DES -out "$TMP_DIR"/"${app}"-key.pem
+    openssl req -new -key "$TMP_DIR"/"${app}"-key.pem -subj "$cert_subject" -out "$TMP_DIR"/"${app}".csr
+    openssl x509 -req -in "$TMP_DIR"/"${app}".csr -CA "$TMP_DIR"/root-ca.pem -CAkey "$TMP_DIR"/root-ca-key.pem -CAcreateserial -CAserial "$TMP_DIR"/ca.srl -sha256 -out "$TMP_DIR"/"${app}".pem -days "$cert_life" 2>/dev/null
 
-    create_cert_secret $namespace $app
+    create_cert_secret "$namespace" "$app"
 
   done
 

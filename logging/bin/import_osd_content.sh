@@ -3,7 +3,7 @@
 # Copyright © 2022,2021, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.."
 source logging/bin/common.sh
 this_script=$(basename "$0")
 
@@ -23,14 +23,14 @@ function import_file {
   if [ -f "$file" ]; then
     # ODFE 1.7.0: successful request returns: {"success":true,"successCount":20}
     # ODFE 1.13.x: successful request returns: {"successCount":1,"success":true,"successResults":[...content details...]}
-    response=$(curl -s -o $TMP_DIR/curl.response -w "%{http_code}" -XPOST "${kb_api_url}/api/saved_objects/_import?overwrite=true" -H "securitytenant: $tenant" -H "$LOG_XSRF_HEADER" --form file=@$file --user $ES_ADMIN_USER:$ES_ADMIN_PASSWD --insecure)
+    response=$(curl -s -o "$TMP_DIR"/curl.response -w "%{http_code}" -XPOST "${kb_api_url}/api/saved_objects/_import?overwrite=true" -H "securitytenant: $tenant" -H "$LOG_XSRF_HEADER" --form file=@"$file" --user "$ES_ADMIN_USER":"$ES_ADMIN_PASSWD" --insecure)
 
     if [[ $response == 2* ]]; then
-      if grep -q '"success":true' $TMP_DIR/curl.response; then
+      if grep -q '"success":true' "$TMP_DIR"/curl.response; then
         log_verbose "Deployed content from file [$file] - Success! [$response]"
       else
         log_warn "Unable to deploy content from file [$file]. [$response]"
-        log_verbose "  Response received was: $(cat $TMP_DIR/curl.response)"
+        log_verbose "  Response received was: $(cat "$TMP_DIR"/curl.response)"
         #log_message "" # null line since response file may not contain LF
       fi
       return 0
@@ -51,22 +51,22 @@ function import_content_batch {
   dir=$1
 
   tmpfile=$TMP_DIR/batched.ndjson
-  touch $tmpfile
+  touch "$tmpfile"
 
   rc=0
   item_count=0
   for f in $dir/*.ndjson; do
     if [ -f "$f" ]; then
       log_debug "Adding $f to $tmpfile"
-      cat $f >>$tmpfile
-      echo " " >>$tmpfile
+      cat "$f" >>"$tmpfile"
+      echo " " >>"$tmpfile"
       ((item_count++))
     fi
   done
 
   if [[ "$item_count" -gt 0 ]]; then
     log_debug "$item_count items packed into $tmpfile for loading"
-    import_file $tmpfile
+    import_file "$tmpfile"
   else
     log_debug "No content found in [$dir] to be loaded"
   fi
@@ -84,7 +84,7 @@ function import_content {
   rc=0
   for f in $dir/*.ndjson; do
     if [ -f "$f" ]; then
-      import_file $f
+      import_file "$f"
       if [ "$?" != "0" ]; then
         rc=1
       fi
@@ -148,7 +148,7 @@ if [ "$rc" != "0" ]; then
   exit $rc
 fi
 
-if kibana_tenant_exists $tenant; then
+if kibana_tenant_exists "$tenant"; then
   log_debug "Confirmed OpenSearch Dashboards tenant space [$tenant] exists"
 elif [ "$tenant" == "global" ]; then
   log_debug "OpenSearch Dashboards tenant space [global] specified."
@@ -164,7 +164,7 @@ if [ -f "$1" ]; then
     f=$1
     log_info "Importing content from file [$f] to tenant space [$tenant]..."
 
-    import_file $f
+    import_file "$f"
     import_problems=$?
   else
     log_error "The specified content file [$1] is not a .ndjson file."
@@ -176,9 +176,9 @@ elif [ -d "$1" ]; then
   log_info "Importing content in [$1] to tenant space [$tenant]..."
   if [ "$batch_kibana_content" != "true" ]; then
     log_debug "'BATCH_KIBANA_CONTENT' flag set to 'false'; loading files individually from directory"
-    import_content $1
+    import_content "$1"
   else
-    import_content_batch $1
+    import_content_batch "$1"
   fi
 
   import_problems=$?

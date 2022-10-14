@@ -3,7 +3,7 @@
 # Copyright © 2020, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.." || exit
 source monitoring/bin/common.sh
 
 if [ "$OPENSHIFT_CLUSTER" == "true" ]; then
@@ -18,22 +18,22 @@ MON_DELETE_PVCS_ON_REMOVE=${MON_DELETE_PVCS_ON_REMOVE:-false}
 MON_DELETE_NAMESPACE_ON_REMOVE=${MON_DELETE_NAMESPACE_ON_REMOVE:-false}
 
 # Check for existing incompatible helm releases up front
-helm2ReleaseCheck prometheus-$MON_NS
-helm2ReleaseCheck v4m-$MON_NS
+helm2ReleaseCheck prometheus-"$MON_NS"
+helm2ReleaseCheck v4m-"$MON_NS"
 
 log_notice "Removing components from the [$MON_NS] namespace..."
 
-if helm3ReleaseExists prometheus-operator $MON_NS; then
+if helm3ReleaseExists prometheus-operator "$MON_NS"; then
   promRelease=prometheus-operator
-elif helm3ReleaseExists v4m-prometheus-operator $MON_NS; then
+elif helm3ReleaseExists v4m-prometheus-operator "$MON_NS"; then
   promRelease=v4m-prometheus-operator
 else
   promRelease=
 fi
 
-if [ ! -z $promRelease ]; then
+if [ ! -z "$promRelease" ]; then
   log_info "Removing the kube-prometheus stack..."
-  helm uninstall --namespace $MON_NS $promRelease
+  helm uninstall --namespace "$MON_NS" "$promRelease"
 fi
 
 if [ $? != 0 ]; then
@@ -42,7 +42,7 @@ fi
 
 if [ "$MON_DELETE_NAMESPACE_ON_REMOVE" == "true" ]; then
   log_info "Deleting the [$MON_NS] namespace..."
-  if kubectl delete namespace $MON_NS --timeout $KUBE_NAMESPACE_DELETE_TIMEOUT; then
+  if kubectl delete namespace "$MON_NS" --timeout "$KUBE_NAMESPACE_DELETE_TIMEOUT"; then
     log_info "[$MON_NS] namespace and monitoring components successfully removed"
     exit 0
   else
@@ -56,18 +56,18 @@ monitoring/bin/remove_dashboards.sh
 log_verbose "Removing Prometheus rules"
 rules=(sas-launcher-job-rules)
 for rule in "${rules[@]}"; do
-  kubectl delete --ignore-not-found -n $MON_NS prometheusrule $rule
+  kubectl delete --ignore-not-found -n "$MON_NS" prometheusrule "$rule"
 done
 
 log_verbose "Removing configmaps and secrets"
-kubectl delete cm --ignore-not-found -n $MON_NS -l sas.com/monitoring-base=kube-viya-monitoring
-kubectl delete secret --ignore-not-found -n $MON_NS -l sas.com/monitoring-base=kube-viya-monitoring
+kubectl delete cm --ignore-not-found -n "$MON_NS" -l sas.com/monitoring-base=kube-viya-monitoring
+kubectl delete secret --ignore-not-found -n "$MON_NS" -l sas.com/monitoring-base=kube-viya-monitoring
 
 if [ "$MON_DELETE_PVCS_ON_REMOVE" == "true" ]; then
   log_verbose "Removing known monitoring PVCs"
-  kubectl delete pvc --ignore-not-found -n $MON_NS -l app=alertmanager
-  kubectl delete pvc --ignore-not-found -n $MON_NS -l app.kubernetes.io/name=grafana
-  kubectl delete pvc --ignore-not-found -n $MON_NS -l app=prometheus
+  kubectl delete pvc --ignore-not-found -n "$MON_NS" -l app=alertmanager
+  kubectl delete pvc --ignore-not-found -n "$MON_NS" -l app.kubernetes.io/name=grafana
+  kubectl delete pvc --ignore-not-found -n "$MON_NS" -l app=prometheus
 fi
 
 # Check for and remove any v4m deployments with old naming convention
@@ -83,7 +83,7 @@ log_info "Checking contents of the [$MON_NS] namespace:"
 crds=(all pvc cm servicemonitor podmonitor prometheus alertmanager prometheusrule thanosrulers)
 empty="true"
 for crd in "${crds[@]}"; do
-  out=$(kubectl get -n $MON_NS $crd 2>&1)
+  out=$(kubectl get -n "$MON_NS" "$crd" 2>&1)
   if [[ "$out" =~ 'No resources found' ]]; then
     :
   else

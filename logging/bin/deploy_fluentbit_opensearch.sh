@@ -3,7 +3,7 @@
 # Copyright © 2020, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.."
 source logging/bin/common.sh
 source logging/bin/secrets-include.sh
 
@@ -28,7 +28,7 @@ log_info "Deploying Fluent Bit ..."
 
 # check for pre-reqs
 # Confirm namespace exists
-if [ "$(kubectl get ns $LOG_NS -o name 2>/dev/null)" == "" ]; then
+if [ "$(kubectl get ns "$LOG_NS" -o name 2>/dev/null)" == "" ]; then
   log_error "Namespace [$LOG_NS] does NOT exist."
   exit 1
 fi
@@ -50,12 +50,12 @@ helmRepoAdd fluent https://fluent.github.io/helm-charts
 #log_verbose "Updating Helm repositories..."
 #helm repo update
 
-helm2ReleaseCheck fb-$LOG_NS
+helm2ReleaseCheck fb-"$LOG_NS"
 
 # Check for an existing Helm release of stable/fluent-bit
-if helm3ReleaseExists fb $LOG_NS; then
+if helm3ReleaseExists fb "$LOG_NS"; then
   log_verbose "Removing an existing release of deprecated stable/fluent-bit Helm chart from from the [$LOG_NS] namespace [$(date)]"
-  helm $helmDebug delete -n $LOG_NS fb
+  helm $helmDebug delete -n "$LOG_NS" fb
 
   if [ $(kubectl get servicemonitors -A | grep fluent-bit-v2 -c) -ge 1 ]; then
     log_debug "Updated serviceMonitor [fluent-bit-v2] appears to be deployed."
@@ -103,17 +103,17 @@ else
 fi
 
 # Create ConfigMap containing Fluent Bit configuration
-kubectl -n $LOG_NS apply -f $FB_CONFIGMAP
+kubectl -n "$LOG_NS" apply -f $FB_CONFIGMAP
 
 # Create ConfigMap containing Viya-customized parsers (delete it first)
-kubectl -n $LOG_NS delete configmap fb-viya-parsers --ignore-not-found
-kubectl -n $LOG_NS create configmap fb-viya-parsers --from-file=logging/fb/viya-parsers.conf
+kubectl -n "$LOG_NS" delete configmap fb-viya-parsers --ignore-not-found
+kubectl -n "$LOG_NS" create configmap fb-viya-parsers --from-file=logging/fb/viya-parsers.conf
 
 # Check for Kubernetes container runtime log format info
 KUBERNETES_RUNTIME_LOGFMT="${KUBERNETES_RUNTIME_LOGFMT}"
 if [ -z "$KUBERNETES_RUNTIME_LOGFMT" ]; then
   somenode=$(kubectl get nodes | awk 'NR==2 { print $1 }')
-  runtime=$(kubectl get node $somenode -o jsonpath={.status.nodeInfo.containerRuntimeVersion} | awk -F: '{print $1}')
+  runtime=$(kubectl get node "$somenode" -o jsonpath={.status.nodeInfo.containerRuntimeVersion} | awk -F: '{print $1}')
   log_debug "Kubernetes container runtime [$runtime] found on node [$somenode]"
   case $runtime in
     docker)
@@ -130,22 +130,22 @@ if [ -z "$KUBERNETES_RUNTIME_LOGFMT" ]; then
 fi
 
 # Create ConfigMap containing Kubernetes container runtime log format
-kubectl -n $LOG_NS delete configmap fb-env-vars --ignore-not-found
-kubectl -n $LOG_NS create configmap fb-env-vars \
+kubectl -n "$LOG_NS" delete configmap fb-env-vars --ignore-not-found
+kubectl -n "$LOG_NS" create configmap fb-env-vars \
   --from-literal=KUBERNETES_RUNTIME_LOGFMT="$KUBERNETES_RUNTIME_LOGFMT" \
   --from-literal=LOG_MULTILINE_PARSER="${LOG_MULTILINE_PARSER}" \
   --from-literal=SEARCH_SERVICENAME="${ES_SERVICENAME}"
 
-kubectl -n $LOG_NS label configmap fb-env-vars managed-by=v4m-es-script
+kubectl -n "$LOG_NS" label configmap fb-env-vars managed-by=v4m-es-script
 
 # Delete any existing Fluent Bit pods in the $LOG_NS namepace (otherwise Helm chart may assume an upgrade w/o reloading updated config
-kubectl -n $LOG_NS delete pods -l "app.kubernetes.io/name=fluent-bit, fbout=es"
+kubectl -n "$LOG_NS" delete pods -l "app.kubernetes.io/name=fluent-bit, fbout=es"
 
 # Deploy Fluent Bit via Helm chart
-helm $helmDebug upgrade --install --namespace $LOG_NS v4m-fb \
+helm $helmDebug upgrade --install --namespace "$LOG_NS" v4m-fb \
   --values logging/fb/fluent-bit_helm_values_opensearch.yaml \
-  --values $openshiftValuesFile \
-  --values $FB_OPENSEARCH_USER_YAML \
+  --values "$openshiftValuesFile" \
+  --values "$FB_OPENSEARCH_USER_YAML" \
   --set fullnameOverride=v4m-fb fluent/fluent-bit
 
 log_info "Fluent Bit deployment completed"

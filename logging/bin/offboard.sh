@@ -3,7 +3,7 @@
 # Copyright Ã‚Â© 2021, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.."
 source logging/bin/common.sh
 
 source logging/bin/apiaccess-include.sh
@@ -37,7 +37,7 @@ POS_PARMS=""
 while (("$#")); do
   case "$1" in
     -ns | --namespace)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         namespace=$2
         shift 2
       else
@@ -47,7 +47,7 @@ while (("$#")); do
       fi
       ;;
     -t | --tenant)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         tenant=$2
         shift 2
       else
@@ -92,10 +92,10 @@ if [ "$namespace" == "global" ]; then
   exit 1
 fi
 
-validateNamespace $namespace
+validateNamespace "$namespace"
 
 if [ -n "$tenant" ]; then
-  validateTenantID $tenant
+  validateTenantID "$tenant"
 
   nst="${namespace}_${tenant}"
   index_nst="${namespace}-__${tenant}__"
@@ -146,14 +146,14 @@ fi
 
 # Delete ES index containing tenant content
 kibana_index_name=".kibana_*_$(echo "$ktenant" | tr -d _)"
-response=$(curl -s -o /dev/null -w "%{http_code}" -XDELETE "${es_api_url}/$kibana_index_name" --user $ES_ADMIN_USER:$ES_ADMIN_PASSWD --insecure)
+response=$(curl -s -o /dev/null -w "%{http_code}" -XDELETE "${es_api_url}/$kibana_index_name" --user "$ES_ADMIN_USER":"$ES_ADMIN_PASSWD" --insecure)
 if [[ $response == 2* ]]; then
   log_info "Deleted index [$kibana_index_name]. [$response]"
 else
   log_warn "There was an issue deleting the index [$kibana_index_name] holding content related to OpenSearch Dashboards tenant space [$ktenant]. You may need to manually delete this index. [$response]"
 fi
 
-response=$(curl -s -o /dev/null -w "%{http_code}" -XDELETE "${es_api_url}/${kibana_index_name}_*" --user $ES_ADMIN_USER:$ES_ADMIN_PASSWD --insecure)
+response=$(curl -s -o /dev/null -w "%{http_code}" -XDELETE "${es_api_url}/${kibana_index_name}_*" --user "$ES_ADMIN_USER":"$ES_ADMIN_PASSWD" --insecure)
 if [[ $response == 2* ]]; then
   log_info "Deleted index [${kibana_index_name}_*]. [$response]"
 else
@@ -161,13 +161,13 @@ else
 fi
 
 # Delete access controls
-./logging/bin/security_delete_rbac.sh $namespace $tenant
+./logging/bin/security_delete_rbac.sh "$namespace" "$tenant"
 
 # Delete Grafana Datasource utility user (if exists)
 grfds_user="${nst}_grafana_ds"
-if user_exists $grfds_user; then
+if user_exists "$grfds_user"; then
   log_verbose "Removing the [$grfds_user] utility account."
-  delete_user $grfds_user
+  delete_user "$grfds_user"
 fi
 
 # Reminder that users are not deleted

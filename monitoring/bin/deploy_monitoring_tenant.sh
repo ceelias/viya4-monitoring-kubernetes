@@ -3,7 +3,7 @@
 # Copyright © 2021, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.."
 source monitoring/bin/common.sh
 source bin/openshift-include.sh
 source bin/tls-include.sh
@@ -34,7 +34,7 @@ log_notice "***Experimental - This script may be removed or undergo significant 
 log_message " " #blank line to improve readability
 
 # Validate tenant name
-validateTenantID $VIYA_TENANT
+validateTenantID "$VIYA_TENANT"
 
 checkDefaultStorageClass
 
@@ -51,20 +51,20 @@ helm repo update
 
 # Copy template files to temp
 tenantDir=$TMP_DIR/$VIYA_TENANT
-mkdir -p $tenantDir
-cp -R monitoring/multitenant/* $tenantDir/
+mkdir -p "$tenantDir"
+cp -R monitoring/multitenant/* "$tenantDir"/
 
 # Replace placeholders
 log_debug "Replacing __TENANT__ for files in [$tenantDir]"
-for f in $(find $tenantDir -name '*.yaml'); do
+for f in $(find "$tenantDir" -name '*.yaml'); do
   if echo "$OSTYPE" | grep 'darwin' >/dev/null 2>&1; then
-    sed -i '' "s/__TENANT__/$VIYA_TENANT/g" $f
-    sed -i '' "s/__TENANT_NS__/$VIYA_NS/g" $f
-    sed -i '' "s/__MON_NS__/$MON_NS/g" $f
+    sed -i '' "s/__TENANT__/$VIYA_TENANT/g" "$f"
+    sed -i '' "s/__TENANT_NS__/$VIYA_NS/g" "$f"
+    sed -i '' "s/__MON_NS__/$MON_NS/g" "$f"
   else
-    sed -i "s/__TENANT__/$VIYA_TENANT/g" $f
-    sed -i "s/__TENANT_NS__/$VIYA_NS/g" $f
-    sed -i "s/__MON_NS__/$MON_NS/g" $f
+    sed -i "s/__TENANT__/$VIYA_TENANT/g" "$f"
+    sed -i "s/__TENANT_NS__/$VIYA_NS/g" "$f"
+    sed -i "s/__MON_NS__/$MON_NS/g" "$f"
   fi
 done
 
@@ -72,14 +72,14 @@ done
 if [ "$MON_TLS_ENABLE" == "true" ] || [ "$TLS_ENABLE" == "true" ]; then
   log_debug "TLS support is enabled"
   export TLS_CONTEXT_DIR=$tenantDir/tls
-  mv $tenantDir/tls/grafana-tls-cert.yaml $tenantDir/tls/grafana-$VIYA_TENANT-tls-cert.yaml
-  mv $tenantDir/tls/prometheus-tls-cert.yaml $tenantDir/tls/prometheus-$VIYA_TENANT-tls-cert.yaml
+  mv "$tenantDir"/tls/grafana-tls-cert.yaml "$tenantDir"/tls/grafana-"$VIYA_TENANT"-tls-cert.yaml
+  mv "$tenantDir"/tls/prometheus-tls-cert.yaml "$tenantDir"/tls/prometheus-"$VIYA_TENANT"-tls-cert.yaml
 fi
 
 # Grafana options
 v4mGrafanaReleasePrefix=v4m-grafana
 # Check for existing tenant instance with the old name
-if helm3ReleaseExists grafana-$VIYA_TENANT $VIYA_NS; then
+if helm3ReleaseExists grafana-"$VIYA_TENANT" "$VIYA_NS"; then
   v4mGrafanaReleasePrefix=grafana
 fi
 
@@ -110,24 +110,24 @@ fi
 
 # Deploy additional scrape configs for Prometheus
 log_info "Configuring secret for Prometheus federation"
-kubectl delete secret --ignore-not-found -n $VIYA_NS prometheus-federate-$VIYA_TENANT
+kubectl delete secret --ignore-not-found -n "$VIYA_NS" prometheus-federate-"$VIYA_TENANT"
 kubectl create secret generic \
-  -n $VIYA_NS \
-  prometheus-federate-$VIYA_TENANT \
-  --from-file cluster-federate-job=$tenantDir/mt-federate-secret.yaml
+  -n "$VIYA_NS" \
+  prometheus-federate-"$VIYA_TENANT" \
+  --from-file cluster-federate-job="$tenantDir"/mt-federate-secret.yaml
 
 if [ "$TLS_ENABLE" == "true" ]; then
   apps=(v4m-prometheus-$VIYA_TENANT $v4mGrafanaReleasePrefix-$VIYA_TENANT)
-  create_tls_certs $VIYA_NS monitoring ${apps[@]}
+  create_tls_certs "$VIYA_NS" monitoring ${apps[@]}
 fi
 
 # Deploy Prometheus
 log_info "Deploying Prometheus"
-kubectl apply -n $VIYA_NS -f $tenantDir/mt-prometheus-common.yaml
+kubectl apply -n "$VIYA_NS" -f "$tenantDir"/mt-prometheus-common.yaml
 if [ "$TLS_ENABLE" == "true" ]; then
-  kubectl apply -n $VIYA_NS -f $tenantDir/tls/mt-prometheus-tls.yaml
+  kubectl apply -n "$VIYA_NS" -f "$tenantDir"/tls/mt-prometheus-tls.yaml
 else
-  kubectl apply -n $VIYA_NS -f $tenantDir/mt-prometheus.yaml
+  kubectl apply -n "$VIYA_NS" -f "$tenantDir"/mt-prometheus.yaml
 fi
 
 # Deploy Prometheus Grafana datasource
@@ -136,12 +136,12 @@ if [ "$TLS_ENABLE" == "true" ]; then
 else
   grafanaDatasource=$tenantDir/grafana-datasource-tenant.yaml
 fi
-kubectl delete secret -n $VIYA_NS --ignore-not-found grafana-datasource-$VIYA_TENANT
-kubectl create secret generic -n $VIYA_NS grafana-datasource-$VIYA_TENANT --from-file $grafanaDatasource
-kubectl label secret -n $VIYA_NS grafana-datasource-$VIYA_TENANT grafana_datasource-$VIYA_TENANT=1
+kubectl delete secret -n "$VIYA_NS" --ignore-not-found grafana-datasource-"$VIYA_TENANT"
+kubectl create secret generic -n "$VIYA_NS" grafana-datasource-"$VIYA_TENANT" --from-file "$grafanaDatasource"
+kubectl label secret -n "$VIYA_NS" grafana-datasource-"$VIYA_TENANT" grafana_datasource-"$VIYA_TENANT"=1
 
 # Grafana
-if helm3ReleaseExists $v4mGrafanaReleasePrefix-$VIYA_TENANT $VIYA_NS; then
+if helm3ReleaseExists $v4mGrafanaReleasePrefix-"$VIYA_TENANT" "$VIYA_NS"; then
   log_info "Upgrading Grafana via Helm...($(date) - timeout 10m)"
 else
   grafanaPwd="$GRAFANA_ADMIN_PASSWORD"
@@ -166,13 +166,13 @@ helm upgrade --install $helmDebug \
   --version "$GRAFANA_CHART_VERSION_TENANT" \
   --atomic \
   --timeout "10m" \
-  $extraArgs \
-  $v4mGrafanaReleasePrefix-$VIYA_TENANT \
+  "$extraArgs" \
+  $v4mGrafanaReleasePrefix-"$VIYA_TENANT" \
   grafana/grafana
 
 # Deploy ServiceMonitors
-kubectl apply -n $VIYA_NS -f $tenantDir/serviceMonitor-sas-cas-tenant.yaml
-kubectl apply -n $VIYA_NS -f $tenantDir/serviceMonitor-sas-pushgateway-tenant.yaml
+kubectl apply -n "$VIYA_NS" -f "$tenantDir"/serviceMonitor-sas-cas-tenant.yaml
+kubectl apply -n "$VIYA_NS" -f "$tenantDir"/serviceMonitor-sas-pushgateway-tenant.yaml
 
 # Elasticsearch Datasource for Grafana
 # Moved down to make sure Grafana pods exist
@@ -180,7 +180,7 @@ LOGGING_DATASOURCE="${LOGGING_DATASOURCE:-false}"
 if [ "$LOGGING_DATASOURCE" == "true" ]; then
   set +e
   log_debug "Creating the logging datasource using the create_logging_datasource script"
-  monitoring/bin/create_logging_datasource.sh -ns ${VIYA_NS} -t ${VIYA_TENANT}
+  monitoring/bin/create_logging_datasource.sh -ns "${VIYA_NS}" -t "${VIYA_TENANT}"
   if (($? == 1)); then
     log_warn "Unable to configure the logging data source at this time."
     log_warn "Please address the errors and re-run the follow command to create the data source at a later time:"
@@ -201,10 +201,10 @@ function deploy_tenant_dashboards {
     # f will include the wildcard character (*)
     if [ -f "$f" ]; then
       log_debug "Deploying dashboard from file [$f]"
-      name=$(basename $f .json)-$VIYA_TENANT
+      name=$(basename "$f" .json)-$VIYA_TENANT
 
-      kubectl create cm -n $DASH_NS $name --dry-run=client --from-file $f -o yaml | kubectl apply -f -
-      kubectl label cm -n $DASH_NS $name --overwrite grafana_dashboard-$VIYA_TENANT=1 sas.com/monitoring-base=kube-viya-monitoring
+      kubectl create cm -n "$DASH_NS" "$name" --dry-run=client --from-file "$f" -o yaml | kubectl apply -f -
+      kubectl label cm -n "$DASH_NS" "$name" --overwrite grafana_dashboard-"$VIYA_TENANT"=1 sas.com/monitoring-base=kube-viya-monitoring
     fi
   done
   log_message "--------------------------------"
@@ -216,7 +216,7 @@ DASH_BASE=$tenantDir/dashboards
 deploy_tenant_dashboards monitoring/multitenant/dashboards
 
 # If a deployment with the old name exists, remove it first
-if helm3ReleaseExists "v4m-tenant-$VIYA_TENANT" $MON_NS; then
+if helm3ReleaseExists "v4m-tenant-$VIYA_TENANT" "$MON_NS"; then
   log_verbose "Removing outdated SAS Viya Monitoring Helm chart release for tenant [${VIYA_NS}/${VIYA_TENANT}]"
   helm uninstall -n "$MON_NS" "v4m-tenant-$VIYA_TENANT"
 fi
@@ -225,7 +225,7 @@ deployV4MInfo "$VIYA_NS" "v4m-metrics-${VIYA_TENANT}"
 
 if [ "$showPass" == "true" ]; then
   # Find the grafana pod
-  grafanaPod="$(kubectl get pods -n $VIYA_NS -l app.kubernetes.io/name=grafana -l app.kubernetes.io/instance=v4m-grafana-${VIYA_TENANT} --template='{{range .items}}{{.metadata.name}}{{end}}')"
+  grafanaPod="$(kubectl get pods -n "$VIYA_NS" -l app.kubernetes.io/name=grafana -l app.kubernetes.io/instance=v4m-grafana-"${VIYA_TENANT}" --template='{{range .items}}{{.metadata.name}}{{end}}')"
 
   log_notice "====================================================================="
   log_notice "Generated Grafana admin password is: $grafanaPwd"

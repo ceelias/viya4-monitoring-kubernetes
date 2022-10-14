@@ -3,7 +3,7 @@
 # Copyright © 2021, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/.."
+cd "$(dirname "$BASH_SOURCE")/.." || exit
 source bin/common.sh
 source bin/service-url-include.sh
 
@@ -42,7 +42,7 @@ for service in $servicelist; do
       namespace=${LOG_NS:-"logging"}
       servicename="v4m-osd"
       ingressname="v4m-osd"
-      tls_flag="$(kubectl -n $namespace get secret v4m-osd-tls-enabled -o=jsonpath={.data.enable_tls} | base64 --decode)"
+      tls_flag="$(kubectl -n "$namespace" get secret v4m-osd-tls-enabled -o=jsonpath={.data.enable_tls} | base64 --decode)"
       ;;
     OPENSEARCH | OS)
       if [ "$LOG_SEARCH_BACKEND" != "OPENSEARCH" ]; then
@@ -65,7 +65,7 @@ for service in $servicelist; do
       service="Kibana"
       servicename="v4m-es-kibana-svc"
       ingressname="v4m-es-kibana-ing"
-      tls_flag="$(kubectl -n $namespace get pod -l role=kibana -o=jsonpath='{.items[*].metadata.annotations.tls_required}')"
+      tls_flag="$(kubectl -n "$namespace" get pod -l role=kibana -o=jsonpath='{.items[*].metadata.annotations.tls_required}')"
       log_debug "TLS required to connect to Kibana? [$tls_flag]"
       ;;
     ELASTICSEARCH | ES)

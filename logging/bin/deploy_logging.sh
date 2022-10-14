@@ -3,7 +3,7 @@
 # Copyright © 2022, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.."
 source logging/bin/common.sh
 
 #Fail if not using OpenSearch back-end
@@ -28,8 +28,8 @@ export LOGGING_DRIVER=true
 checkDefaultStorageClass
 
 # Create namespace if it doesn't exist
-if [ "$(kubectl get ns $LOG_NS -o name 2>/dev/null)" == "" ]; then
-  kubectl create ns $LOG_NS
+if [ "$(kubectl get ns "$LOG_NS" -o name 2>/dev/null)" == "" ]; then
+  kubectl create ns "$LOG_NS"
 fi
 
 log_notice "Deploying logging components to the [$LOG_NS] namespace [$(date)]"
@@ -91,7 +91,7 @@ set -e
 ##################################
 
 # If a deployment with the old name exists, remove it first
-if helm3ReleaseExists v4m $LOG_NS; then
+if helm3ReleaseExists v4m "$LOG_NS"; then
   log_verbose "Removing outdated SAS Viya Monitoring Helm chart release from [$LOG_NS] namespace"
   helm uninstall -n "$LOG_NS" "v4m"
 fi

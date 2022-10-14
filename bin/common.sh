@@ -27,9 +27,9 @@ function trap_add() {
 
 function errexit_msg {
   if [ -o errexit ]; then
-    log_error "Exiting script [$(basename $0)] due to an error executing the command [$BASH_COMMAND]."
+    log_error "Exiting script [$(basename "$0")] due to an error executing the command [$BASH_COMMAND]."
   else
-    log_debug "Trap [ERR] triggered in [$(basename $0)] while executing the command [$BASH_COMMAND]."
+    log_debug "Trap [ERR] triggered in [$(basename "$0")] while executing the command [$BASH_COMMAND]."
   fi
 }
 
@@ -51,16 +51,16 @@ if [ "$SAS_COMMON_SOURCED" = "" ]; then
   if [ -d "$USER_DIR" ]; then
     # Resolve full path
     export USER_DIR=$(
-      cd "$(dirname "$USER_DIR")"
+      cd "$(dirname "$USER_DIR")" || exit
       pwd
     )/$(basename "$USER_DIR")
   fi
   if [ -f "$USER_DIR/user.env" ]; then
-    userEnv=$(grep -v '^[[:blank:]]*$' $USER_DIR/user.env | grep -v '^#' | xargs)
+    userEnv=$(grep -v '^[[:blank:]]*$' "$USER_DIR"/user.env | grep -v '^#' | xargs)
     if [ "$userEnv" != "" ]; then
       log_debug "Loading global user environment file: $USER_DIR/user.env"
       if [ "$userEnv" != "" ]; then
-        export $userEnv
+        export "$userEnv"
       fi
     fi
   fi
@@ -108,7 +108,7 @@ if [ "$SAS_COMMON_SOURCED" = "" ]; then
     exit 1
   fi
   log_debug "Temporary directory: [$TMP_DIR]"
-  echo "# This file intentionally empty" >$TMP_DIR/empty.yaml
+  echo "# This file intentionally empty" >"$TMP_DIR"/empty.yaml
 
   # Delete the temp directory on exit
   function cleanup {

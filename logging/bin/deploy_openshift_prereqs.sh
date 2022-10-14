@@ -3,7 +3,7 @@
 # Copyright © 2021, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.." || exit
 source logging/bin/common.sh
 
 this_script=$(basename "$0")
@@ -22,7 +22,7 @@ if [ "$OPENSHIFT_PREREQS_ENABLE" != "true" ]; then
 fi
 
 # link Elasticsearch serviceAccounts to 'privileged' scc
-oc adm policy add-scc-to-user privileged -z v4m-os -n $LOG_NS
+oc adm policy add-scc-to-user privileged -z v4m-os -n "$LOG_NS"
 
 # create the 'v4mlogging' SCC, if it does not already exist
 if oc get scc v4mlogging 2>/dev/null 1>&2; then
@@ -32,7 +32,7 @@ else
 fi
 
 # link Fluent Bit serviceAccount to 'v4mlogging' scc
-oc adm policy add-scc-to-user v4mlogging -z v4m-fb -n $LOG_NS
+oc adm policy add-scc-to-user v4mlogging -z v4m-fb -n "$LOG_NS"
 
 log_info "OpenShift Prerequisites have been deployed."
 

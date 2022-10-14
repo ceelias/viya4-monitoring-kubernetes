@@ -3,7 +3,7 @@
 # Copyright © 2022, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.."
 source logging/bin/common.sh
 source logging/bin/secrets-include.sh
 source bin/tls-include.sh
@@ -30,7 +30,7 @@ set -e
 require_opensearch
 
 # Confirm namespace exists
-if [ "$(kubectl get ns $LOG_NS -o name 2>/dev/null)" == "" ]; then
+if [ "$(kubectl get ns "$LOG_NS" -o name 2>/dev/null)" == "" ]; then
   log_error "Namespace [$LOG_NS] does NOT exist."
   exit 1
 fi
@@ -45,7 +45,7 @@ export ES_KIBANASERVER_PASSWD=${ES_KIBANASERVER_PASSWD}
 create_user_secret internal-user-kibanaserver kibanaserver "$ES_KIBANASERVER_PASSWD" managed-by=v4m-es-script
 
 # Verify cert generator is available (if necessary)
-if verify_cert_generator $LOG_NS kibana; then
+if verify_cert_generator "$LOG_NS" kibana; then
   log_debug "cert generator check OK [$cert_generator_ok]"
 else
   log_error "A required TLS cert does not exist and the expected certificate generator mechanism [$cert_generator] is not available to create the missing cert"
@@ -53,7 +53,7 @@ else
 fi
 
 # Create/Get necessary TLS certs
-create_tls_certs $LOG_NS logging kibana
+create_tls_certs "$LOG_NS" logging kibana
 
 # enable debug on Helm via env var
 export HELM_DEBUG="${HELM_DEBUG:-false}"
@@ -98,8 +98,8 @@ else
   log_debug "TLS not enabled for OpenSearch Dashboards"
 fi
 #(Re)Create secret containing OSD TLS Setting
-kubectl -n $LOG_NS delete secret v4m-osd-tls-enabled --ignore-not-found
-kubectl -n $LOG_NS create secret generic v4m-osd-tls-enabled --from-literal enable_tls="$LOG_KB_TLS_ENABLE"
+kubectl -n "$LOG_NS" delete secret v4m-osd-tls-enabled --ignore-not-found
+kubectl -n "$LOG_NS" create secret generic v4m-osd-tls-enabled --from-literal enable_tls="$LOG_KB_TLS_ENABLE"
 
 # OpenSearch Dashboards
 log_info "Deploying OpenSearch Dashboards"
@@ -128,8 +128,8 @@ fi
 
 # Deploy Elasticsearch via Helm chart
 helm $helmDebug upgrade --install v4m-osd \
-  --version $OSD_HELM_CHART_VERSION \
-  --namespace $LOG_NS \
+  --version "$OSD_HELM_CHART_VERSION" \
+  --namespace "$LOG_NS" \
   --values logging/opensearch/osd_helm_values.yaml \
   --values "$wnpValuesFile" \
   --values "$nodeport_yaml" \

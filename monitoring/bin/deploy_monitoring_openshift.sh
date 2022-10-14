@@ -3,7 +3,7 @@
 # Copyright © 2021, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.."
 source monitoring/bin/common.sh
 
 if [ "$OPENSHIFT_CLUSTER" != "true" ]; then
@@ -21,8 +21,8 @@ if [ "$HELM_DEBUG" == "true" ]; then
   helmDebug="--debug"
 fi
 
-if [ -z "$(kubectl get ns $MON_NS -o name 2>/dev/null)" ]; then
-  kubectl create ns $MON_NS
+if [ -z "$(kubectl get ns "$MON_NS" -o name 2>/dev/null)" ]; then
+  kubectl create ns "$MON_NS"
 fi
 
 set -e
@@ -69,14 +69,14 @@ else
 fi
 
 log_info "Enabling Grafana to access OpenShift Prometheus instances..."
-if [ -z "$(kubectl get serviceAccount -n $MON_NS grafana-serviceaccount -o name 2>/dev/null)" ]; then
+if [ -z "$(kubectl get serviceAccount -n "$MON_NS" grafana-serviceaccount -o name 2>/dev/null)" ]; then
   log_info "Creating Grafana serviceAccount..."
-  kubectl create serviceaccount -n $MON_NS grafana-serviceaccount
+  kubectl create serviceaccount -n "$MON_NS" grafana-serviceaccount
 fi
 log_debug "Adding cluster role..."
-oc adm policy add-cluster-role-to-user cluster-monitoring-view -z grafana-serviceaccount -n $MON_NS
+oc adm policy add-cluster-role-to-user cluster-monitoring-view -z grafana-serviceaccount -n "$MON_NS"
 log_debug "Obtaining token..."
-grafanaToken=$(oc serviceaccounts get-token grafana-serviceaccount -n $MON_NS)
+grafanaToken=$(oc serviceaccounts get-token grafana-serviceaccount -n "$MON_NS")
 if [ "$grafanaToken" == "" ]; then
   log_error "Unable to obtain authentication token for [grafana-serviceaccount]"
   exit 1
@@ -91,14 +91,14 @@ fi
 
 # Access token to OpenShift Prometheus instances
 grafanaYAML=$TMP_DIR/grafana-values.yaml
-cp monitoring/openshift/grafana-values.yaml $grafanaYAML
+cp monitoring/openshift/grafana-values.yaml "$grafanaYAML"
 if echo "$OSTYPE" | grep 'darwin' >/dev/null 2>&1; then
-  sed -i '' "s/__BEARER_TOKEN__/$grafanaToken/g" $grafanaYAML
+  sed -i '' "s/__BEARER_TOKEN__/$grafanaToken/g" "$grafanaYAML"
 else
-  sed -i "s/__BEARER_TOKEN__/$grafanaToken/g" $grafanaYAML
+  sed -i "s/__BEARER_TOKEN__/$grafanaToken/g" "$grafanaYAML"
 fi
 
-if ! helm3ReleaseExists v4m-grafana $MON_NS; then
+if ! helm3ReleaseExists v4m-grafana "$MON_NS"; then
   firstTimeGrafana=true
 fi
 
@@ -109,7 +109,7 @@ if [ "$OPENSHIFT_AUTH_ENABLE" == "true" ]; then
 else
   grafanaAuthYAML="monitoring/openshift/grafana-tls-only-values.yaml"
   log_debug "Creating the Grafana service to generate TLS certs..."
-  kubectl apply -n $MON_NS -f monitoring/openshift/v4m-grafana-svc.yaml
+  kubectl apply -n "$MON_NS" -f monitoring/openshift/v4m-grafana-svc.yaml
   log_debug "Sleeping 5 sec..."
   sleep 5
 fi
@@ -145,52 +145,52 @@ helm upgrade --install $helmDebug \
   -f "$grafanaYAML" \
   -f "$grafanaAuthYAML" \
   -f "$userGrafanaYAML" \
-  --set 'grafana\.ini'.server.domain=$OPENSHIFT_ROUTE_DOMAIN \
-  --set 'grafana\.ini'.server.root_url=https://v4m-grafana-$MON_NS.$OPENSHIFT_ROUTE_DOMAIN$OPENSHIFT_ROUTE_PATH_GRAFANA \
+  --set 'grafana\.ini'.server.domain="$OPENSHIFT_ROUTE_DOMAIN" \
+  --set 'grafana\.ini'.server.root_url=https://v4m-grafana-"$MON_NS"."$OPENSHIFT_ROUTE_DOMAIN""$OPENSHIFT_ROUTE_PATH_GRAFANA" \
   --set 'grafana\.ini'.server.serve_from_sub_path=$grafanaSubPath \
   --version "$OPENSHIFT_GRAFANA_CHART_VERSION" \
   --atomic \
-  $grafanaPwd \
-  $extraArgs \
+  "$grafanaPwd" \
+  "$extraArgs" \
   v4m-grafana \
   grafana/grafana
 
 if [ "$OPENSHIFT_AUTH_ENABLE" == "true" ]; then
   log_info "Using OpenShift authentication for Grafana"
   log_debug "Annotating grafana-serviceaccount to auto-generate TLS certs..."
-  kubectl annotate serviceaccount -n $MON_NS --overwrite grafana-serviceaccount 'serviceaccounts.openshift.io/oauth-redirectreference.primary={"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"v4m-grafana"}}'
+  kubectl annotate serviceaccount -n "$MON_NS" --overwrite grafana-serviceaccount 'serviceaccounts.openshift.io/oauth-redirectreference.primary={"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"v4m-grafana"}}'
 
   log_debug "Adding ClusterRoleBinding for grafana-serviceaccount..."
   crbYAML=$TMP_DIR/grafana-serviceaccount-binding.yaml
-  cp monitoring/openshift/grafana-serviceaccount-binding.yaml $crbYAML
+  cp monitoring/openshift/grafana-serviceaccount-binding.yaml "$crbYAML"
   if echo "$OSTYPE" | grep 'darwin' >/dev/null 2>&1; then
-    sed -i '' "s/__MON_NS__/$MON_NS/g" $crbYAML
+    sed -i '' "s/__MON_NS__/$MON_NS/g" "$crbYAML"
   else
-    sed -i "s/__MON_NS__/$MON_NS/g" $crbYAML
+    sed -i "s/__MON_NS__/$MON_NS/g" "$crbYAML"
   fi
 
-  kubectl apply -f $crbYAML
+  kubectl apply -f "$crbYAML"
 
-  kubectl apply -n $MON_NS -f monitoring/openshift/grafana-proxy-secret.yaml
+  kubectl apply -n "$MON_NS" -f monitoring/openshift/grafana-proxy-secret.yaml
 
   grafanaProxyPatchYAML=$TMP_DIR/grafana-proxy-patch.yaml
 
   if [ "$OPENSHIFT_PATH_ROUTES" == "true" ]; then
     log_debug "Using path-based version of the OpenShift Grafana proxy patch"
-    cp monitoring/openshift/grafana-proxy-patch-path.yaml $grafanaProxyPatchYAML
+    cp monitoring/openshift/grafana-proxy-patch-path.yaml "$grafanaProxyPatchYAML"
   else
     log_debug "Using host-based version of the OpenShift Grafana proxy patch"
-    cp monitoring/openshift/grafana-proxy-patch-host.yaml $grafanaProxyPatchYAML
+    cp monitoring/openshift/grafana-proxy-patch-host.yaml "$grafanaProxyPatchYAML"
   fi
 
   log_debug "Deploying CA bundle..."
-  kubectl apply -n $MON_NS -f monitoring/openshift/grafana-trusted-ca-bundle.yaml
+  kubectl apply -n "$MON_NS" -f monitoring/openshift/grafana-trusted-ca-bundle.yaml
 
   log_info "Patching Grafana service for auto-generated TLS certs"
-  kubectl annotate service -n $MON_NS --overwrite v4m-grafana 'service.beta.openshift.io/serving-cert-secret-name=grafana-tls'
+  kubectl annotate service -n "$MON_NS" --overwrite v4m-grafana 'service.beta.openshift.io/serving-cert-secret-name=grafana-tls'
 
   log_info "Patching Grafana pod with authenticating TLS proxy..."
-  kubectl patch deployment -n $MON_NS v4m-grafana --patch "$(cat $grafanaProxyPatchYAML)"
+  kubectl patch deployment -n "$MON_NS" v4m-grafana --patch "$(cat "$grafanaProxyPatchYAML")"
 else
   log_info "Using native Grafana authentication"
 fi
@@ -201,7 +201,7 @@ DASH_NS=$MON_NS LOGGING_DASH=${LOGGING_DASH:-false} KUBE_DASH=${KUBE_DASH:-false
 
 log_info "Adding SAS Viya recording rules..."
 for f in monitoring/rules/viya/rules-*.yaml; do
-  kubectl apply -n $MON_NS -f $f
+  kubectl apply -n "$MON_NS" -f "$f"
 done
 
 if [ "$OPENSHIFT_PATH_ROUTES" == "true" ]; then
@@ -209,24 +209,24 @@ if [ "$OPENSHIFT_PATH_ROUTES" == "true" ]; then
 else
   routeHost=${OPENSHIFT_ROUTE_HOST_GRAFANA:-v4m-grafana-$MON_NS.$OPENSHIFT_ROUTE_DOMAIN}
 fi
-if ! kubectl get route -n $MON_NS v4m-grafana 1>/dev/null 2>&1; then
+if ! kubectl get route -n "$MON_NS" v4m-grafana 1>/dev/null 2>&1; then
   log_info "Exposing Grafana service as a route..."
   if [ "$OPENSHIFT_PATH_ROUTES" == "true" ]; then
     oc create route reencrypt \
-      -n $MON_NS \
+      -n "$MON_NS" \
       --service v4m-grafana \
       --hostname "$routeHost" \
-      --path $OPENSHIFT_ROUTE_PATH_GRAFANA
+      --path "$OPENSHIFT_ROUTE_PATH_GRAFANA"
   else
     oc create route reencrypt \
-      -n $MON_NS \
+      -n "$MON_NS" \
       --service v4m-grafana \
       --hostname "$routeHost"
   fi
 fi
 
 # If a deployment with the old name exists, remove it first
-if helm3ReleaseExists v4m $MON_NS; then
+if helm3ReleaseExists v4m "$MON_NS"; then
   log_verbose "Removing outdated SAS Viya Monitoring Helm chart release from [$MON_NS] namespace"
   helm uninstall -n "$MON_NS" "v4m"
 fi

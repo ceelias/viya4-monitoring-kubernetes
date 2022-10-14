@@ -63,8 +63,8 @@ function deployV4MInfo() {
   log_info "Updating Viya Monitoring for Kubernetes version information"
   helm upgrade --install \
     -n "$NS" \
-    --values $valuesYAML \
-    $releaseName ./v4m-chart
+    --values "$valuesYAML" \
+    "$releaseName" ./v4m-chart
 
   getHelmReleaseVersion "$NS" "$releaseName"
 }

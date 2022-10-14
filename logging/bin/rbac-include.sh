@@ -21,14 +21,14 @@ function create_role {
   role=$1
   role_template=$2
 
-  response=$(curl -s -o /dev/null -w "%{http_code}" -XPUT "$sec_api_url/roles/$role" -H 'Content-Type: application/json' -d @${role_template} --user $ES_ADMIN_USER:$ES_ADMIN_PASSWD --insecure)
+  response=$(curl -s -o /dev/null -w "%{http_code}" -XPUT "$sec_api_url/roles/$role" -H 'Content-Type: application/json' -d @"${role_template}" --user "$ES_ADMIN_USER":"$ES_ADMIN_PASSWD" --insecure)
 
   if [[ $response == 2* ]]; then
     log_info "Security role [$role] created. [$response]"
     return 0
   else
     log_error "There was an issue creating the security role [$role]. [$response]"
-    log_debug "template contents: /n $(cat $role_template)"
+    log_debug "template contents: /n $(cat "$role_template")"
     return 1
   fi
 }
@@ -42,8 +42,8 @@ function delete_role {
   local role response
   role=$1
 
-  if role_exists $role; then
-    response=$(curl -s -o /dev/null -w "%{http_code}" -XDELETE "$sec_api_url/roles/$role" --user $ES_ADMIN_USER:$ES_ADMIN_PASSWD --insecure)
+  if role_exists "$role"; then
+    response=$(curl -s -o /dev/null -w "%{http_code}" -XDELETE "$sec_api_url/roles/$role" --user "$ES_ADMIN_USER":"$ES_ADMIN_PASSWD" --insecure)
     if [[ $response != 2* ]]; then
       log_error "There was an issue deleting the security role [$role]. [$response]"
       return 1
@@ -68,12 +68,12 @@ function ensure_role_exists {
   role=$1
   role_template=${2:-null}
 
-  if role_exists $role; then
+  if role_exists "$role"; then
     return 0
   else
     if [ -n "$role_template" ]; then
       rc=$()
-      if create_role $role $role_template; then
+      if create_role "$role" "$role_template"; then
         return 0
       else
         return 1
@@ -97,7 +97,7 @@ function role_exists {
 
   role=$1
 
-  response=$(curl -s -o /dev/null -w "%{http_code}" -XGET "$sec_api_url/roles/$role" --user $ES_ADMIN_USER:$ES_ADMIN_PASSWD --insecure)
+  response=$(curl -s -o /dev/null -w "%{http_code}" -XGET "$sec_api_url/roles/$role" --user "$ES_ADMIN_USER":"$ES_ADMIN_PASSWD" --insecure)
   if [[ $response == 2* ]]; then
     log_debug "Confirmed [$role] exists."
     return 0
@@ -121,7 +121,7 @@ function add_rolemapping {
   log_debug "Parms passed to add_rolemapping function  targetrole=$targetrole  berole=$berole"
 
   # get existing rolemappings for $targetrole
-  response=$(curl -s -o $TMP_DIR/rolemapping.json -w "%{http_code}" -XGET "$sec_api_url/rolesmapping/$targetrole" --user $ES_ADMIN_USER:$ES_ADMIN_PASSWD --insecure)
+  response=$(curl -s -o "$TMP_DIR"/rolemapping.json -w "%{http_code}" -XGET "$sec_api_url/rolesmapping/$targetrole" --user "$ES_ADMIN_USER":"$ES_ADMIN_PASSWD" --insecure)
 
   if [[ $response == 404 ]]; then
     log_debug "Rolemappings for [$targetrole] do not exist; creating rolemappings. [$response]"
@@ -131,12 +131,12 @@ function add_rolemapping {
 
   elif [[ $response == 2* ]]; then
     log_debug "Existing rolemappings for [$targetrole] obtained. [$response]"
-    log_debug "$(cat $TMP_DIR/rolemapping.json)"
+    log_debug "$(cat "$TMP_DIR"/rolemapping.json)"
 
-    if [ "$(grep $berole $TMP_DIR/rolemapping.json)" ]; then
+    if [ "$(grep "$berole" "$TMP_DIR"/rolemapping.json)" ]; then
       log_debug "A rolemapping between [$targetrole] and  back-end role [$berole] already appears to exist; leaving as-is."
       return 0
-    elif [ "$(grep '\"backend_roles\":\[\],' $TMP_DIR/rolemapping.json)" ]; then
+    elif [ "$(grep '\"backend_roles\":\[\],' "$TMP_DIR"/rolemapping.json)" ]; then
       log_debug "The role [$targetrole] has no existing rolemappings"
       json='[{"op": "add","path": "/backend_roles","value":["'"$berole"'"]}]'
       verb=PATCH
@@ -152,12 +152,12 @@ function add_rolemapping {
 
   log_debug "JSON data passed to curl [$verb]: $json"
 
-  response=$(curl -s -o /dev/null -w "%{http_code}" -X${verb} "$sec_api_url/rolesmapping/$targetrole" -H 'Content-Type: application/json' -d "$json" --user $ES_ADMIN_USER:$ES_ADMIN_PASSWD --insecure)
+  response=$(curl -s -o /dev/null -w "%{http_code}" -X${verb} "$sec_api_url/rolesmapping/$targetrole" -H 'Content-Type: application/json' -d "$json" --user "$ES_ADMIN_USER":"$ES_ADMIN_PASSWD" --insecure)
   if [[ $response != 2* ]]; then
-    log_error "There was an issue creating the rolemapping between [$targetrole] and backend-role(s) ["$berole"]. [$response]"
+    log_error "There was an issue creating the rolemapping between [$targetrole] and backend-role(s) [""$berole""]. [$response]"
     return 1
   else
-    log_info "Security rolemapping created between [$targetrole] and backend-role(s) ["$berole"]. [$response]"
+    log_info "Security rolemapping created between [$targetrole] and backend-role(s) [""$berole""]. [$response]"
     return 0
   fi
 
@@ -172,8 +172,8 @@ function delete_rolemappings {
   local role response
   role=$1
 
-  if role_exists $role; then
-    response=$(curl -s -o /dev/null -w "%{http_code}" -XDELETE "$sec_api_url/rolesmapping/$role" --user $ES_ADMIN_USER:$ES_ADMIN_PASSWD --insecure)
+  if role_exists "$role"; then
+    response=$(curl -s -o /dev/null -w "%{http_code}" -XDELETE "$sec_api_url/rolesmapping/$role" --user "$ES_ADMIN_USER":"$ES_ADMIN_PASSWD" --insecure)
     if [[ $response == 404 ]]; then
       log_info "Rolemappings for [$role] do not exist; nothing to delete. [$response]"
       return 0
@@ -204,10 +204,10 @@ function remove_rolemapping {
   berole2remove=$2
   log_debug "remove_rolemapping targetrole:$targetrole berole2remove:$berole2remove"
 
-  if role_exists $targetrole; then
+  if role_exists "$targetrole"; then
 
     # get existing rolemappings for $targetrole
-    response=$(curl -s -o $TMP_DIR/rolemapping.json -w "%{http_code}" -XGET "$sec_api_url/rolesmapping/$targetrole" --user $ES_ADMIN_USER:$ES_ADMIN_PASSWD --insecure)
+    response=$(curl -s -o "$TMP_DIR"/rolemapping.json -w "%{http_code}" -XGET "$sec_api_url/rolesmapping/$targetrole" --user "$ES_ADMIN_USER":"$ES_ADMIN_PASSWD" --insecure)
 
     if [[ $response == 404 ]]; then
       log_debug "Rolemappings for [$targetrole] do not exist; nothing to do. [$response]"
@@ -217,10 +217,10 @@ function remove_rolemapping {
       return 1
     else
       log_debug "Existing rolemappings for [$targetrole] obtained. [$response]"
-      log_debug "$(cat $TMP_DIR/rolemapping.json)"
+      log_debug "$(cat "$TMP_DIR"/rolemapping.json)"
 
       regex='"backend_roles":\[((("[_0-9a-zA-Z\-]+",?)?)+)\]'
-      json=$(cat $TMP_DIR/rolemapping.json)
+      json=$(cat "$TMP_DIR"/rolemapping.json)
 
       if [[ $json =~ $regex ]]; then
 
@@ -235,7 +235,7 @@ function remove_rolemapping {
           # ODFE 1.13 {"kibana_user":{"hosts":[],"users":[],"reserved":false,"hidden":false,"backend_roles":["kibanauser","d27886_kibana_users","d35396_kibana_users","d35396_acme_kibana_users","d35396A_kibana_users","d35396A_acme_kibana_users"],"and_backend_roles":[]}}
 
           # Extract and reconstruct backend_roles array from rolemapping json
-          newroles=$(echo $be_roles | sed "s/\"$berole2remove\"//g;s/,,,/,/g;s/,,/,/g; s/,]/]/g;s/\[,/\[/g")
+          newroles=$(echo "$be_roles" | sed "s/\"$berole2remove\"//g;s/,,,/,/g;s/,,/,/g; s/,]/]/g;s/\[,/\[/g")
           if [ "$be_roles" == "$newroles" ]; then
             log_debug "The backend role [$berole2remove] is not mapped to [$targetrole]; moving on."
             return 0
@@ -244,13 +244,13 @@ function remove_rolemapping {
             log_debug "Updated Back-end Role ($targetrole): $newroles"
 
             # Copy RBAC template
-            cp logging/opensearch/rbac/backend_rolemapping_delete.json $TMP_DIR/${targetrole}_backend_rolemapping_delete.json
+            cp logging/opensearch/rbac/backend_rolemapping_delete.json "$TMP_DIR"/"${targetrole}"_backend_rolemapping_delete.json
 
             #update json template file w/revised list of backend roles
-            sed -i'.bak' "s/xxBACKENDROLESxx/$newroles/g" $TMP_DIR/${targetrole}_backend_rolemapping_delete.json # BACKENDROLES
+            sed -i'.bak' "s/xxBACKENDROLESxx/$newroles/g" "$TMP_DIR"/"${targetrole}"_backend_rolemapping_delete.json # BACKENDROLES
 
             # Replace the rolemappings for the $targetrole with the revised list of backend roles
-            response=$(curl -s -o /dev/null -w "%{http_code}" -XPATCH "$sec_api_url/rolesmapping/$targetrole" -H 'Content-Type: application/json' -d @$TMP_DIR/${targetrole}_backend_rolemapping_delete.json --user $ES_ADMIN_USER:$ES_ADMIN_PASSWD --insecure)
+            response=$(curl -s -o /dev/null -w "%{http_code}" -XPATCH "$sec_api_url/rolesmapping/$targetrole" -H 'Content-Type: application/json' -d @"$TMP_DIR"/"${targetrole}"_backend_rolemapping_delete.json --user "$ES_ADMIN_USER":"$ES_ADMIN_PASSWD" --insecure)
             if [[ $response != 2* ]]; then
               log_error "There was an issue updating the rolesmapping for [$targetrole] to remove link with backend-role [$berole2remove]. [$response]"
               return 1
@@ -282,7 +282,7 @@ function create_kibana_tenant {
   tenant=$1
   description=$2
 
-  response=$(curl -s -o /dev/null -w "%{http_code}" -XPUT "$sec_api_url/tenants/$tenant" -H 'Content-Type: application/json' -d '{"description":"'"$description"'"}' --user $ES_ADMIN_USER:$ES_ADMIN_PASSWD --insecure)
+  response=$(curl -s -o /dev/null -w "%{http_code}" -XPUT "$sec_api_url/tenants/$tenant" -H 'Content-Type: application/json' -d '{"description":"'"$description"'"}' --user "$ES_ADMIN_USER":"$ES_ADMIN_PASSWD" --insecure)
 
   if [[ $response == 2* ]]; then
     log_info "OpenSearch Dashboards tenant space [$tenant] created. [$response]"
@@ -303,7 +303,7 @@ function delete_kibana_tenant {
 
   tenant=$1
 
-  response=$(curl -s -o /dev/null -w "%{http_code}" -XDELETE "$sec_api_url/tenants/$tenant" --user $ES_ADMIN_USER:$ES_ADMIN_PASSWD --insecure)
+  response=$(curl -s -o /dev/null -w "%{http_code}" -XDELETE "$sec_api_url/tenants/$tenant" --user "$ES_ADMIN_USER":"$ES_ADMIN_PASSWD" --insecure)
 
   if [[ $response == 2* ]]; then
     log_info "OpenSearch Dashboards tenant space [$tenant] deleted. [$response]"
@@ -323,7 +323,7 @@ function kibana_tenant_exists {
   local tenant response
   tenant=$1
 
-  response=$(curl -s -o /dev/null -w "%{http_code}" -XGET "${sec_api_url}/tenants/$tenant" --user $ES_ADMIN_USER:$ES_ADMIN_PASSWD --insecure)
+  response=$(curl -s -o /dev/null -w "%{http_code}" -XGET "${sec_api_url}/tenants/$tenant" --user "$ES_ADMIN_USER":"$ES_ADMIN_PASSWD" --insecure)
 
   if [[ $response == 2* ]]; then
     log_debug "Confirmed OpenSearch Dashboards tenant [$tenant] exists. [$response]"
@@ -347,7 +347,7 @@ function user_exists {
   local username response
   username=$1
 
-  response=$(curl -s -o /dev/null -w "%{http_code}" -XGET "${sec_api_url}/internalusers/$username" --user $ES_ADMIN_USER:$ES_ADMIN_PASSWD --insecure)
+  response=$(curl -s -o /dev/null -w "%{http_code}" -XGET "${sec_api_url}/internalusers/$username" --user "$ES_ADMIN_USER":"$ES_ADMIN_PASSWD" --insecure)
 
   if [[ $response == 2* ]]; then
     log_debug "Confirmed OpenSearch user [$username] exists. [$response]"
@@ -367,8 +367,8 @@ function delete_user {
   local username response
   username=$1
 
-  if user_exists $username; then
-    response=$(curl -s -o /dev/null -w "%{http_code}" -XDELETE "${sec_api_url}/internalusers/$username" --user $ES_ADMIN_USER:$ES_ADMIN_PASSWD --insecure)
+  if user_exists "$username"; then
+    response=$(curl -s -o /dev/null -w "%{http_code}" -XDELETE "${sec_api_url}/internalusers/$username" --user "$ES_ADMIN_USER":"$ES_ADMIN_PASSWD" --insecure)
 
     if [[ $response == 2* ]]; then
       log_debug "User [$username] deleted. [$response]"

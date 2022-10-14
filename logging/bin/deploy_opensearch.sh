@@ -3,7 +3,7 @@
 # Copyright © 2022, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.."
 source logging/bin/common.sh
 source logging/bin/secrets-include.sh
 source bin/tls-include.sh
@@ -32,7 +32,7 @@ require_opensearch
 checkDefaultStorageClass
 
 # Confirm namespace exists
-if [ "$(kubectl get ns $LOG_NS -o name 2>/dev/null)" == "" ]; then
+if [ "$(kubectl get ns "$LOG_NS" -o name 2>/dev/null)" == "" ]; then
   log_error "Namespace [$LOG_NS] does NOT exist."
   exit 1
 fi
@@ -55,7 +55,7 @@ create_user_secret internal-user-metricgetter metricgetter "$ES_METRICGETTER_PAS
 #cert_generator="${CERT_GENERATOR:-openssl}"
 
 # Verify cert generator is available (if necessary)
-if verify_cert_generator $LOG_NS es-transport es-rest es-admin; then
+if verify_cert_generator "$LOG_NS" es-transport es-rest es-admin; then
   log_debug "cert generator check OK [$cert_generator_ok]"
 else
   log_error "One or more required TLS certs do not exist and the expected certificate generator mechanism [$CERT_GENERATOR] is not available to create the missing certs"
@@ -63,43 +63,43 @@ else
 fi
 
 # Create/Get necessary TLS certs
-create_tls_certs $LOG_NS logging es-transport es-rest es-admin
+create_tls_certs "$LOG_NS" logging es-transport es-rest es-admin
 
 # need to wait for cert-manager to create all certs and secrets
 sleep 10
 
 # Get subject from admin and transport cert for opensearch.yaml
-if [ ! -f $TMP_DIR/es-transport.pem ]; then
+if [ ! -f "$TMP_DIR"/es-transport.pem ]; then
   log_debug "Extracting es-transport cert from secret"
-  kubectl -n $LOG_NS get secret es-transport-tls-secret -o=jsonpath="{.data.tls\.crt}" | base64 --decode >$TMP_DIR/es-transport.pem
+  kubectl -n "$LOG_NS" get secret es-transport-tls-secret -o=jsonpath="{.data.tls\.crt}" | base64 --decode >"$TMP_DIR"/es-transport.pem
 fi
-node_dn=$(openssl x509 -subject -nameopt RFC2253 -noout -in $TMP_DIR/es-transport.pem | sed "s/subject=\s*\(\S*\)/\1/")
+node_dn=$(openssl x509 -subject -nameopt RFC2253 -noout -in "$TMP_DIR"/es-transport.pem | sed "s/subject=\s*\(\S*\)/\1/")
 
-if [ ! -f $TMP_DIR/es-admin.pem ]; then
+if [ ! -f "$TMP_DIR"/es-admin.pem ]; then
   log_debug "Extracting es-admin cert from secret"
-  kubectl -n $LOG_NS get secret es-admin-tls-secret -o=jsonpath="{.data.tls\.crt}" | base64 --decode >$TMP_DIR/es-admin.pem
+  kubectl -n "$LOG_NS" get secret es-admin-tls-secret -o=jsonpath="{.data.tls\.crt}" | base64 --decode >"$TMP_DIR"/es-admin.pem
 fi
-admin_dn=$(openssl x509 -subject -nameopt RFC2253 -noout -in $TMP_DIR/es-admin.pem | sed "s/subject=\s*\(\S*\)/\1/")
+admin_dn=$(openssl x509 -subject -nameopt RFC2253 -noout -in "$TMP_DIR"/es-admin.pem | sed "s/subject=\s*\(\S*\)/\1/")
 
 log_debug "Subjects node_dn:[$node_dn] admin_dn:[$admin_dn]"
 
 #write cert subjects to secret to be mounted as env var
-kubectl -n $LOG_NS delete secret opensearch-cert-subjects --ignore-not-found
-kubectl -n $LOG_NS create secret generic opensearch-cert-subjects --from-literal=node_dn="$node_dn" --from-literal=admin_dn="$admin_dn"
+kubectl -n "$LOG_NS" delete secret opensearch-cert-subjects --ignore-not-found
+kubectl -n "$LOG_NS" create secret generic opensearch-cert-subjects --from-literal=node_dn="$node_dn" --from-literal=admin_dn="$admin_dn"
 
 # Create ConfigMap for securityadmin script
-kubectl -n $LOG_NS delete configmap run-securityadmin.sh --ignore-not-found
-kubectl -n $LOG_NS create configmap run-securityadmin.sh --from-file logging/opensearch/bin/run_securityadmin.sh
-kubectl -n $LOG_NS label configmap run-securityadmin.sh managed-by=v4m-es-script search-backend=opensearch
+kubectl -n "$LOG_NS" delete configmap run-securityadmin.sh --ignore-not-found
+kubectl -n "$LOG_NS" create configmap run-securityadmin.sh --from-file logging/opensearch/bin/run_securityadmin.sh
+kubectl -n "$LOG_NS" label configmap run-securityadmin.sh managed-by=v4m-es-script search-backend=opensearch
 
 # Need to retrieve these from secrets in case secrets pre-existed
-export ES_ADMIN_USER=$(kubectl -n $LOG_NS get secret internal-user-admin -o=jsonpath="{.data.username}" | base64 --decode)
-export ES_ADMIN_PASSWD=$(kubectl -n $LOG_NS get secret internal-user-admin -o=jsonpath="{.data.password}" | base64 --decode)
-export ES_METRICGETTER_USER=$(kubectl -n $LOG_NS get secret internal-user-metricgetter -o=jsonpath="{.data.username}" | base64 --decode)
-export ES_METRICGETTER_PASSWD=$(kubectl -n $LOG_NS get secret internal-user-metricgetter -o=jsonpath="{.data.password}" | base64 --decode)
+export ES_ADMIN_USER=$(kubectl -n "$LOG_NS" get secret internal-user-admin -o=jsonpath="{.data.username}" | base64 --decode)
+export ES_ADMIN_PASSWD=$(kubectl -n "$LOG_NS" get secret internal-user-admin -o=jsonpath="{.data.password}" | base64 --decode)
+export ES_METRICGETTER_USER=$(kubectl -n "$LOG_NS" get secret internal-user-metricgetter -o=jsonpath="{.data.username}" | base64 --decode)
+export ES_METRICGETTER_PASSWD=$(kubectl -n "$LOG_NS" get secret internal-user-metricgetter -o=jsonpath="{.data.password}" | base64 --decode)
 
 # Generate message about autogenerated admin password
-adminpwd_autogenerated=$(kubectl -n $LOG_NS get secret internal-user-admin -o jsonpath='{.metadata.labels.autogenerated_password}')
+adminpwd_autogenerated=$(kubectl -n "$LOG_NS" get secret internal-user-admin -o jsonpath='{.metadata.labels.autogenerated_password}')
 if [ ! -z "$adminpwd_autogenerated" ]; then
   # Print info about how to obtain admin password
   add_notice "                                                                    "
@@ -135,7 +135,7 @@ log_verbose "Updating Helm repositories"
 helm repo update
 
 # Check for existing OpenSearch helm release
-if [ "$(helm -n $LOG_NS list --filter 'opensearch' -q)" == "opensearch" ]; then
+if [ "$(helm -n "$LOG_NS" list --filter 'opensearch' -q)" == "opensearch" ]; then
   log_debug "The Helm release [opensearch] already exists; upgrading the release."
   existingSearch="true"
 else
@@ -143,10 +143,10 @@ else
   existingSearch="false"
 fi
 
-helm2ReleaseCheck odfe-$LOG_NS
+helm2ReleaseCheck odfe-"$LOG_NS"
 
 # Check for existing Open Distro helm release
-if [ "$(helm -n $LOG_NS list --filter 'odfe' -q)" == "odfe" ]; then
+if [ "$(helm -n "$LOG_NS" list --filter 'odfe' -q)" == "odfe" ]; then
 
   log_info "An existing ODFE-based deployment was detected; migrating to an OpenSearch-based deployment."
   existingODFE="true"
@@ -154,7 +154,7 @@ if [ "$(helm -n $LOG_NS list --filter 'odfe' -q)" == "odfe" ]; then
   #
   #Migrate Kibana content if upgrading from ODFE 1.7.0
   #
-  if [ "$(helm -n $LOG_NS list -o yaml --filter odfe | grep app_version)" == "- app_version: 1.8.0" ]; then
+  if [ "$(helm -n "$LOG_NS" list -o yaml --filter odfe | grep app_version)" == "- app_version: 1.8.0" ]; then
 
     # Prior to our 1.1.0 release we used ODFE 1.7.0
     log_info "Migrating content from Open Distro for Elasticsearch 1.7.0"
@@ -176,7 +176,7 @@ if [ "$(helm -n $LOG_NS list --filter 'odfe' -q)" == "odfe" ]; then
     #Need to confirm KB URL works...might not if TLS enabled.
     #If that's the case, reset things and do it again with TLS=true.
 
-    response=$(curl -s -o /dev/null -w "%{http_code}" -XGET "${kb_api_url}/status" -u $ES_ADMIN_USER:$ES_ADMIN_PASSWD -k)
+    response=$(curl -s -o /dev/null -w "%{http_code}" -XGET "${kb_api_url}/status" -u "$ES_ADMIN_USER":"$ES_ADMIN_PASSWD" -k)
 
     if [[ $response != 2* ]]; then
       log_debug "Unable to connect to Kibana using HTTP; will try using HTTPS"
@@ -191,15 +191,15 @@ if [ "$(helm -n $LOG_NS list --filter 'odfe' -q)" == "odfe" ]; then
     content2export='{"type": ["config", "url","visualization", "dashboard", "search", "index-pattern"],"excludeExportDetails": false}'
 
     #The 'kb-xsrf' reference below is correct since we are interacting with ODFE KB
-    response=$(curl -s -o $KB_GLOBAL_EXPORT_FILE -w "%{http_code}" -XPOST "${kb_api_url}/api/saved_objects/_export" -d "$content2export" -H "kbn-xsrf: true" -H 'Content-Type: application/json' -u $ES_ADMIN_USER:$ES_ADMIN_PASSWD -k)
+    response=$(curl -s -o "$KB_GLOBAL_EXPORT_FILE" -w "%{http_code}" -XPOST "${kb_api_url}/api/saved_objects/_export" -d "$content2export" -H "kbn-xsrf: true" -H 'Content-Type: application/json' -u "$ES_ADMIN_USER":"$ES_ADMIN_PASSWD" -k)
 
     if [[ $response != 2* ]]; then
       log_warn "There was an issue exporting the existing content from Kibana [$response]"
-      log_debug "Failed response details: $(tail -n1 $KB_GLOBAL_EXPORT_FILE)"
+      log_debug "Failed response details: $(tail -n1 "$KB_GLOBAL_EXPORT_FILE")"
       #TODO: Exit here?  Display messages as shown?  Add BIG MESSAGE about potential loss of content?
     else
       log_info "Content from existing Kibana instance cached for migration. [$response]"
-      log_debug "Export details: $(tail -n1 $KB_GLOBAL_EXPORT_FILE)"
+      log_debug "Export details: $(tail -n1 "$KB_GLOBAL_EXPORT_FILE")"
     fi
 
     #Remove traces of ODFE interaction
@@ -214,14 +214,14 @@ if [ "$(helm -n $LOG_NS list --filter 'odfe' -q)" == "odfe" ]; then
 
   # Remove Fluent Bit Helm release to
   # avoid losing log messages during transition
-  if helm3ReleaseExists v4m-fb $LOG_NS; then
+  if helm3ReleaseExists v4m-fb "$LOG_NS"; then
     log_debug "Removing the Fluent Bit Helm release"
-    helm -n $LOG_NS delete v4m-fb
+    helm -n "$LOG_NS" delete v4m-fb
   fi
 
   # Remove the existing ODFE Helm release
   log_debug "Removing an existing ODFE Helm release"
-  helm -n $LOG_NS delete odfe
+  helm -n "$LOG_NS" delete odfe
   sleep 20
 
   #bypass security setup since
@@ -273,8 +273,8 @@ fi
 # Deploy OpenSearch via Helm chart
 # NOTE: nodeGroup needed to get resource names we want
 helm $helmDebug upgrade --install opensearch \
-  --version $OPENSEARCH_HELM_CHART_VERSION \
-  --namespace $LOG_NS \
+  --version "$OPENSEARCH_HELM_CHART_VERSION" \
+  --namespace "$LOG_NS" \
   --values logging/opensearch/opensearch_helm_values.yaml \
   --values "$wnpValuesFile" \
   --values "$ES_OPEN_USER_YAML" \
@@ -290,8 +290,8 @@ if [ "$deploy_temp_masters" == "true" ]; then
   #      was created during prior Helm chart deployment
   log_debug "Upgrade from ODFE to OpenSearch detected; creating temporary master-only nodes."
   helm $helmDebug upgrade --install opensearch-master \
-    --version $OPENSEARCH_HELM_CHART_VERSION \
-    --namespace $LOG_NS \
+    --version "$OPENSEARCH_HELM_CHART_VERSION" \
+    --namespace "$LOG_NS" \
     --values logging/opensearch/opensearch_helm_values.yaml \
     --values "$wnpValuesFile" \
     --values "$ES_OPEN_USER_YAML" \
@@ -307,15 +307,15 @@ fi
 
 # waiting for PVCs to be bound
 declare -i pvcCounter=0
-pvc_status=$(kubectl -n $LOG_NS get pvc v4m-search-v4m-search-0 -o=jsonpath="{.status.phase}")
+pvc_status=$(kubectl -n "$LOG_NS" get pvc v4m-search-v4m-search-0 -o=jsonpath="{.status.phase}")
 until [ "$pvc_status" == "Bound" ] || (($pvcCounter > 90)); do
   sleep 5
   pvcCounter=$((pvcCounter + 5))
-  pvc_status=$(kubectl -n $LOG_NS get pvc v4m-search-v4m-search-0 -o=jsonpath="{.status.phase}")
+  pvc_status=$(kubectl -n "$LOG_NS" get pvc v4m-search-v4m-search-0 -o=jsonpath="{.status.phase}")
 done
 
 # Confirm PVC is "bound" (matched) to PV
-pvc_status=$(kubectl -n $LOG_NS get pvc v4m-search-v4m-search-0 -o=jsonpath="{.status.phase}")
+pvc_status=$(kubectl -n "$LOG_NS" get pvc v4m-search-v4m-search-0 -o=jsonpath="{.status.phase}")
 if [ "$pvc_status" != "Bound" ]; then
   log_error "It appears that the PVC [v4m-search-v4m-search-0] associated with the [v4m-search-0] node has not been bound to a PV."
   log_error "The status of the PVC is [$pvc_status]"
@@ -326,7 +326,7 @@ log_verbose "The PVC [v4m-search-v4m-search-0] have been bound to PVs"
 
 # Need to wait 2-3 minutes for the OpenSearch to come up and running
 log_info "Waiting on OpenSearch pods to be Ready"
-kubectl -n $LOG_NS wait pods v4m-search-0 --for=condition=Ready --timeout=10m
+kubectl -n "$LOG_NS" wait pods v4m-search-0 --for=condition=Ready --timeout=10m
 
 # TO DO: Convert to curl command to detect ES is up?
 # hitting https:/host:port -u adminuser:adminpwd --insecure
@@ -339,7 +339,7 @@ if [ "$deploy_temp_masters" == "true" ]; then
 
   log_verbose "Upgrade to OpenSearch from Open Distro for Elasticsearch processing continues..."
   log_info "Waiting up to [3] minutes for 'master-only' ES pods to be Ready [$(date)]"
-  kubectl -n $LOG_NS wait pods -l app.kubernetes.io/instance=opensearch-master --for=condition=Ready --timeout=3m
+  kubectl -n "$LOG_NS" wait pods -l app.kubernetes.io/instance=opensearch-master --for=condition=Ready --timeout=3m
 
   #TODO: Remove 'master-only' nodes from list of 'master-eligible' ES nodes via API call?
   # get_es_api_url
@@ -351,35 +351,35 @@ if [ "$deploy_temp_masters" == "true" ]; then
   # Scale down master statefulset by 1 (to 1)
   log_debug "Removing 'master-only' ES nodes needed only during upgrade to OpenSearch"
 
-  kubectl -n $LOG_NS scale statefulset v4m-master --replicas 1
+  kubectl -n "$LOG_NS" scale statefulset v4m-master --replicas 1
   ## wait for 1 minute (probably excessive, but...)
   sleep 30
 
   #Scale down master statefulset by 1 (to 0)
-  kubectl -n $LOG_NS scale statefulset v4m-master --replicas 0
+  kubectl -n "$LOG_NS" scale statefulset v4m-master --replicas 0
   ##wait for 1 minute (probably excessive, but...)
   sleep 30
 
   #uninstall the Helm release
-  helm -n $LOG_NS delete opensearch-master
+  helm -n "$LOG_NS" delete opensearch-master
   ##wait for 30 secs? 1 min?
   sleep 30
 
   #Delete "master" PVCs
   ## Add labels?  Appears labels were overwritten by Helm chart
-  kubectl -n $LOG_NS delete pvc v4m-master-v4m-master-0 v4m-master-v4m-master-1 v4m-master-v4m-master-2 --ignore-not-found
+  kubectl -n "$LOG_NS" delete pvc v4m-master-v4m-master-0 v4m-master-v4m-master-1 v4m-master-v4m-master-2 --ignore-not-found
 fi
 
 # Reconcile count of 'data' nodes
 if [ "$existingODFE" == "true" ]; then
 
   min_data_nodes=$((odfe_data_pvc_count - 1))
-  search_node_count=$(kubectl -n $LOG_NS get statefulset v4m-search -o jsonpath='{.spec.replicas}' 2>/dev/null)
+  search_node_count=$(kubectl -n "$LOG_NS" get statefulset v4m-search -o jsonpath='{.spec.replicas}' 2>/dev/null)
 
   if [ "$search_node_count" -gt "0" ] && [ "$min_data_nodes" -gt "0" ] && [ "$search_node_count" -lt "$min_data_nodes" ]; then
     log_warn "There were insufficient OpenSearch nodes [$search_node_count] configured to handle all of the data from the original ODFE 'data' nodes"
     log_warn "This OpenSearch cluster has been scaled up to [$min_data_nodes] nodes to ensure no loss of data."
-    kubectl -n $LOG_NS scale statefulset v4m-search --replicas=$min_data_nodes
+    kubectl -n "$LOG_NS" scale statefulset v4m-search --replicas=$min_data_nodes
   fi
 fi
 
@@ -388,16 +388,16 @@ set +e
 # Run the security admin script on the pod
 # Add some logic to find ES release
 if [ "$existingSearch" == "false" ] && [ "$existingODFE" != "true" ]; then
-  kubectl -n $LOG_NS exec v4m-search-0 -c opensearch -- config/run_securityadmin.sh
+  kubectl -n "$LOG_NS" exec v4m-search-0 -c opensearch -- config/run_securityadmin.sh
   # Retrieve log file from security admin script
-  kubectl -n $LOG_NS cp v4m-search-0:config/run_securityadmin.log $TMP_DIR/run_securityadmin.log
-  if [ "$(tail -n1 $TMP_DIR/run_securityadmin.log)" == "Done with success" ]; then
+  kubectl -n "$LOG_NS" cp v4m-search-0:config/run_securityadmin.log "$TMP_DIR"/run_securityadmin.log
+  if [ "$(tail -n1 "$TMP_DIR"/run_securityadmin.log)" == "Done with success" ]; then
     log_verbose "The run_securityadmin.log script appears to have run successfully; you can review its output below:"
   else
     log_warn "There may have been a problem with the run_securityadmin.log script; review the output below:"
   fi
   # show output from run_securityadmin.sh script
-  sed 's/^/   | /' $TMP_DIR/run_securityadmin.log
+  sed 's/^/   | /' "$TMP_DIR"/run_securityadmin.log
 else
   log_verbose "Existing OpenSearch release found. Skipping OpenSearch security initialization."
 fi

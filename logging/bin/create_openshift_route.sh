@@ -3,7 +3,7 @@
 # Copyright © 2021, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.." || exit
 source logging/bin/common.sh
 
 this_script=$(basename "$0")
@@ -96,7 +96,7 @@ case "$app" in
     ;;
 esac
 
-if oc -n $namespace get route $route_name 2>/dev/null 1>&2; then
+if oc -n "$namespace" get route $route_name 2>/dev/null 1>&2; then
   log_info "Skipping route creation; the requested route [$route_name] already exists in the namespace [$namespace]."
   exit 0
 fi
@@ -104,7 +104,7 @@ fi
 if [ "$tls_enable" != "true" ]; then
   tls_mode="edge"
 else
-  if oc -n $namespace get secret $tls_secret 2>/dev/null 1>&2; then
+  if oc -n "$namespace" get secret $tls_secret 2>/dev/null 1>&2; then
     tls_mode="reencrypt"
   else
     log_error "The specified secret [$tls_secret] does NOT exists in the namespace [$namespace]."
@@ -112,16 +112,16 @@ else
   fi
 fi
 
-oc -n $namespace create route $tls_mode $route_name \
+oc -n "$namespace" create route $tls_mode $route_name \
   --service $service_name \
   --port=$port \
   --insecure-policy=Redirect \
-  --hostname $route_host \
+  --hostname "$route_host" \
   --path $route_path
 rc=$?
 
 if [ "$OPENSHIFT_PATH_ROUTES" == "true" ]; then
-  oc -n $namespace annotate route $route_name "haproxy.router.openshift.io/rewrite-target=/"
+  oc -n "$namespace" annotate route $route_name "haproxy.router.openshift.io/rewrite-target=/"
 fi
 
 if [ "$rc" != "0" ]; then
@@ -131,12 +131,12 @@ fi
 
 if [ "$tls_enable" == "true" ]; then
   # identify secret containing destination CA
-  oc -n $namespace annotate route $route_name cert-utils-operator.redhat-cop.io/destinationCA-from-secret=$tls_secret
+  oc -n "$namespace" annotate route $route_name cert-utils-operator.redhat-cop.io/destinationCA-from-secret=$tls_secret
 fi
 
-if oc -n $namespace get secret $ingress_tls_secret 2>/dev/null 1>&2; then
+if oc -n "$namespace" get secret $ingress_tls_secret 2>/dev/null 1>&2; then
   # Add annotation to identify secret containing TLS certs
-  oc -n $namespace annotate route $route_name cert-utils-operator.redhat-cop.io/certs-from-secret=$ingress_tls_secret
+  oc -n "$namespace" annotate route $route_name cert-utils-operator.redhat-cop.io/certs-from-secret=$ingress_tls_secret
 else
   log_debug "The ingress secret [$ingress_tls_secret] does NOT exists, omitting annotation [certs-from-secret]."
 fi

@@ -3,7 +3,7 @@
 # Copyright © 2020, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.."
 source monitoring/bin/common.sh
 
 set -e
@@ -37,10 +37,10 @@ function deploy_dashboards {
     # f will include the wildcard character (*)
     if [ -f "$f" ]; then
       log_debug "Deploying dashboard from file [$f]"
-      name=$(basename $f .json)
+      name=$(basename "$f" .json)
 
-      kubectl create cm -n $DASH_NS $name --dry-run=client --from-file $f -o yaml | kubectl apply -f -
-      kubectl label cm -n $DASH_NS $name --overwrite grafana_dashboard=1 sas.com/monitoring-base=kube-viya-monitoring sas.com/dashboardType=$type
+      kubectl create cm -n "$DASH_NS" "$name" --dry-run=client --from-file "$f" -o yaml | kubectl apply -f -
+      kubectl label cm -n "$DASH_NS" "$name" --overwrite grafana_dashboard=1 sas.com/monitoring-base=kube-viya-monitoring sas.com/dashboardType="$type"
     fi
   done
 }
@@ -54,9 +54,9 @@ if [ "$1" != "" ]; then
       # Deploy single dashboard
       f=$1
       log_info "Deploying Grafana dashboard [$f]"
-      name=$(basename $f .json)
-      kubectl create cm -n $DASH_NS $name --dry-run=client --from-file $f -o yaml | kubectl apply -f -
-      kubectl label cm -n $DASH_NS $name --overwrite grafana_dashboard=1 sas.com/monitoring-base=kube-viya-monitoring sas.com/dashboardType=manual
+      name=$(basename "$f" .json)
+      kubectl create cm -n "$DASH_NS" "$name" --dry-run=client --from-file "$f" -o yaml | kubectl apply -f -
+      kubectl label cm -n "$DASH_NS" "$name" --overwrite grafana_dashboard=1 sas.com/monitoring-base=kube-viya-monitoring sas.com/dashboardType=manual
       exit $?
     else
       log_error "[$1] is not a Grafana dashboard .json file"

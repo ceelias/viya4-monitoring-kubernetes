@@ -3,7 +3,7 @@
 # Copyright © 2021, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.." || exit
 source monitoring/bin/common.sh
 
 if [ "$OPENSHIFT_CLUSTER" != "true" ]; then
@@ -18,11 +18,11 @@ MON_DELETE_PVCS_ON_REMOVE=${MON_DELETE_PVCS_ON_REMOVE:-false}
 MON_DELETE_NAMESPACE_ON_REMOVE=${MON_DELETE_NAMESPACE_ON_REMOVE:-false}
 
 log_info "Removing the Grafana route..."
-kubectl delete route --ignore-not-found -n $MON_NS v4m-grafana
+kubectl delete route --ignore-not-found -n "$MON_NS" v4m-grafana
 
-if helm3ReleaseExists v4m-grafana $MON_NS; then
+if helm3ReleaseExists v4m-grafana "$MON_NS"; then
   log_info "Removing Grafana..."
-  helm uninstall --namespace $MON_NS v4m-grafana
+  helm uninstall --namespace "$MON_NS" v4m-grafana
   if [ $? != 0 ]; then
     log_warn "Uninstall of [v4m-grafana] was not successful. Check output above for details."
   fi
@@ -41,7 +41,7 @@ removeV4MInfo "$MON_NS" "v4m-metrics"
 
 if [ "$MON_DELETE_NAMESPACE_ON_REMOVE" == "true" ]; then
   log_info "Deleting the [$MON_NS] namespace..."
-  if kubectl delete namespace $MON_NS --timeout $KUBE_NAMESPACE_DELETE_TIMEOUT; then
+  if kubectl delete namespace "$MON_NS" --timeout "$KUBE_NAMESPACE_DELETE_TIMEOUT"; then
     log_info "[$MON_NS] namespace and monitoring components successfully removed"
     exit 0
   else
@@ -61,18 +61,18 @@ monitoring/bin/remove_dashboards.sh
 log_info "Removing Prometheus rules..."
 rules=(sas-launcher-job-rules)
 for rule in "${rules[@]}"; do
-  kubectl delete --ignore-not-found -n $MON_NS prometheusrule $rule
+  kubectl delete --ignore-not-found -n "$MON_NS" prometheusrule "$rule"
 done
 
 log_info "Removing Grafana service account..."
-kubectl delete --ignore-not-found serviceAccount -n $MON_NS grafana-serviceaccount
+kubectl delete --ignore-not-found serviceAccount -n "$MON_NS" grafana-serviceaccount
 
 log_debug "Removing Grafana service..."
-kubectl delete --ignore-not-found service -n $MON_NS v4m-grafana
+kubectl delete --ignore-not-found service -n "$MON_NS" v4m-grafana
 
 if [ "$MON_DELETE_PVCS_ON_REMOVE" == "true" ]; then
   log_info "Removing known monitoring PVCs..."
-  kubectl delete pvc --ignore-not-found -n $MON_NS -l app.kubernetes.io/name=grafana
+  kubectl delete pvc --ignore-not-found -n "$MON_NS" -l app.kubernetes.io/name=grafana
 fi
 
 # Wait for resources to terminate
@@ -83,7 +83,7 @@ log_info "Checking contents of the [$MON_NS] namespace:"
 crds=(all pvc cm servicemonitor podmonitor prometheus alertmanager prometheusrule thanosrulers)
 empty="true"
 for crd in "${crds[@]}"; do
-  out=$(kubectl get -n $MON_NS $crd 2>&1)
+  out=$(kubectl get -n "$MON_NS" "$crd" 2>&1)
   if [[ "$out" =~ 'No resources found' ]]; then
     :
   else

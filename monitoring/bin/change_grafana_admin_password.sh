@@ -3,7 +3,7 @@
 # Copyright © 2022, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.." || exit
 source monitoring/bin/common.sh
 
 this_script=$(basename "$0")
@@ -32,7 +32,7 @@ POS_PARMS=""
 while (("$#")); do
   case "$1" in
     -ns | --namespace)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         tenantNS=$2
         shift 2
       else
@@ -42,7 +42,7 @@ while (("$#")); do
       fi
       ;;
     -t | --tenant)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         tenant=$2
         shift 2
       else
@@ -52,7 +52,7 @@ while (("$#")); do
       fi
       ;;
     -p | --password)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+      if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
         password=$2
         shift 2
       else
@@ -96,19 +96,19 @@ else
 fi
 
 # Check and make sure that a password was provided.
-if [ -z $password ]; then
+if [ -z "$password" ]; then
   log_error "A value for parameter [PASSWORD] has not been provided"
   exit 1
 fi
 
 if [ "$cluster" == "true" ]; then
-  grafanaPod="$(kubectl get pods -n $namespace -l app.kubernetes.io/name=grafana --template='{{range .items}}{{.metadata.name}}{{end}}')"
+  grafanaPod="$(kubectl get pods -n "$namespace" -l app.kubernetes.io/name=grafana --template='{{range .items}}{{.metadata.name}}{{end}}')"
 else
-  grafanaPod="$(kubectl get pods -n $namespace -l app.kubernetes.io/name=grafana -l app.kubernetes.io/instance=$grafanaInstance --template='{{range .items}}{{.metadata.name}}{{end}}')"
+  grafanaPod="$(kubectl get pods -n "$namespace" -l app.kubernetes.io/name=grafana -l app.kubernetes.io/instance="$grafanaInstance" --template='{{range .items}}{{.metadata.name}}{{end}}')"
 fi
 
 # Error out if a Grafana pod has not been found
-if [ -z $grafanaPod ]; then
+if [ -z "$grafanaPod" ]; then
   log_error "Unable to update Grafana password."
   log_error "No Grafana pods were available to update"
   exit 1
@@ -116,7 +116,7 @@ fi
 
 # Changes the admin password using the Grafana CLI
 log_info "Updating the admin password using Grafana CLI"
-kubectl exec -n $namespace $grafanaPod -c grafana -- bin/grafana-cli admin reset-admin-password $password
+kubectl exec -n "$namespace" "$grafanaPod" -c grafana -- bin/grafana-cli admin reset-admin-password "$password"
 
 # Exit out of the script if the Grafana CLI call fails
 if (($? != 0)); then
@@ -127,16 +127,16 @@ fi
 # Patch new password in Kubernetes
 encryptedPassword="$(echo -n "$password" | base64)"
 log_info "Updating Grafana secret with the new password"
-kubectl -n $namespace patch secret $grafanaInstance --type='json' -p="[{'op' : 'replace' ,'path' : '/data/admin-password' ,'value' : '$encryptedPassword'}]"
+kubectl -n "$namespace" patch secret "$grafanaInstance" --type='json' -p="[{'op' : 'replace' ,'path' : '/data/admin-password' ,'value' : '$encryptedPassword'}]"
 
 # Restart Grafana pods and wait for them to restart
 log_info "Grafana admin password has been updated.  Restarting Grafana pods to apply the change"
 if [ "$cluster" == "true" ]; then
-  kubectl delete pods -n $namespace -l "app.kubernetes.io/instance=v4m-prometheus-operator" -l "app.kubernetes.io/name=grafana"
-  kubectl -n $namespace wait pods --selector "app.kubernetes.io/instance=v4m-prometheus-operator","app.kubernetes.io/name=grafana" --for condition=Ready --timeout=2m
+  kubectl delete pods -n "$namespace" -l "app.kubernetes.io/instance=v4m-prometheus-operator" -l "app.kubernetes.io/name=grafana"
+  kubectl -n "$namespace" wait pods --selector "app.kubernetes.io/instance=v4m-prometheus-operator","app.kubernetes.io/name=grafana" --for condition=Ready --timeout=2m
   log_info "Grafana password has been successfully changed."
 else
-  kubectl delete pods -n $namespace -l "app.kubernetes.io/instance=$grafanaInstance"
-  kubectl -n $namespace wait pods --selector app.kubernetes.io/instance=$grafanaInstance --for condition=Ready --timeout=2m
+  kubectl delete pods -n "$namespace" -l "app.kubernetes.io/instance=$grafanaInstance"
+  kubectl -n "$namespace" wait pods --selector app.kubernetes.io/instance="$grafanaInstance" --for condition=Ready --timeout=2m
   log_info "Grafana admin password has been successfully changed for [$tenantNS/$tenant]."
 fi

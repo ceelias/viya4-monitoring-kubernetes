@@ -31,8 +31,8 @@ function stop_portforwarding {
 
   if ps -p "$pid" >/dev/null; then
     log_debug "Killing port-forwarding process [$pid]."
-    kill -9 $pid
-    wait $pid 2>/dev/null # suppresses message reporting process has been killed
+    kill -9 "$pid"
+    wait "$pid" 2>/dev/null # suppresses message reporting process has been killed
   else
     log_debug "No portforwarding processID found; nothing to terminate."
   fi
@@ -53,7 +53,7 @@ function stop_es_portforwarding {
 
   if [ -n "$espfpid" ]; then
     log_debug "ES PF PID for stopping: $espfpid"
-    stop_portforwarding $espfpid
+    stop_portforwarding "$espfpid"
     unset espfpid
     unset es_api_url
   fi
@@ -68,7 +68,7 @@ function stop_kb_portforwarding {
 
   if [ -n "$kbpfpid" ]; then
     log_debug "KB PF PID for stopping: $kbpfpid"
-    stop_portforwarding $kbpfpid
+    stop_portforwarding "$kbpfpid"
     unset kbpfpid
     unset kb_api_url
   fi
@@ -87,19 +87,19 @@ function get_api_url {
   usetls=${3:-false}
   ingress=$4
 
-  api_url=$(get_service_url "$LOG_NS" "$servicename" "$usetls" $ingress)
+  api_url=$(get_service_url "$LOG_NS" "$servicename" "$usetls" "$ingress")
 
   if [ -z "$api_url" ] || [ "$LOG_ALWAYS_PORT_FORWARD" == "true" ]; then
     # set up temporary port forwarding to allow curl access
     log_debug "Will use Kubernetes port-forwarding to access"
     log_debug "LOG_ALWAYS_PORT_FORWARD: $LOG_ALWAYS_PORT_FORWARD api_url: $api_url"
 
-    serviceport=$(kubectl -n $LOG_NS get service $servicename -o=jsonpath=$portpath)
+    serviceport=$(kubectl -n "$LOG_NS" get service "$servicename" -o=jsonpath="$portpath")
     log_debug "serviceport: $serviceport"
 
     # command is sent to run in background
 
-    kubectl -n $LOG_NS port-forward --address localhost svc/$servicename :$serviceport >$tmpfile 2>/dev/null &
+    kubectl -n "$LOG_NS" port-forward --address localhost svc/"$servicename" :"$serviceport" >"$tmpfile" 2>/dev/null &
 
     # get PID to allow us to kill process later
     pfPID=$!
@@ -110,7 +110,7 @@ function get_api_url {
 
     # determine which port port-forwarding is using
     pfRegex='Forwarding from .+:([0-9]+)'
-    myline=$(head -n1 $tmpfile)
+    myline=$(head -n1 "$tmpfile")
 
     if [[ $myline =~ $pfRegex ]]; then
       TEMP_PORT="${BASH_REMATCH[1]}"
@@ -186,13 +186,13 @@ function get_kb_api_url {
     tlsrequired="$KB_TLS_ENABLED"
     log_debug "Kibana TLS setting [$KB_TLS_ENABLED] explicitly passed to get_kb_api_url"
   elif [ "$LOG_SEARCH_BACKEND" != "OPENSEARCH" ]; then
-    tlsrequired="$(kubectl -n $LOG_NS get pod -l role=kibana -o=jsonpath='{.items[*].metadata.annotations.tls_required}')"
+    tlsrequired="$(kubectl -n "$LOG_NS" get pod -l role=kibana -o=jsonpath='{.items[*].metadata.annotations.tls_required}')"
   else
-    tlsrequired="$(kubectl -n $LOG_NS get secret v4m-osd-tls-enabled -o=jsonpath={.data.enable_tls} | base64 --decode)"
+    tlsrequired="$(kubectl -n "$LOG_NS" get secret v4m-osd-tls-enabled -o=jsonpath={.data.enable_tls} | base64 --decode)"
   fi
   log_debug "TLS required to connect to Kibana? [$tlsrequired]"
 
-  get_api_url "$KB_SERVICENAME" '{.spec.ports[?(@.name=="'${KB_SERVICEPORT}'")].port}' $tlsrequired $KB_INGRESSNAME
+  get_api_url "$KB_SERVICENAME" '{.spec.ports[?(@.name=="'"${KB_SERVICEPORT}"'")].port}' "$tlsrequired" "$KB_INGRESSNAME"
   rc=$?
 
   if [ "$rc" == "0" ]; then

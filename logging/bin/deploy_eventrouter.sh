@@ -3,7 +3,7 @@
 # Copyright © 2020, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.."
 source logging/bin/common.sh
 
 this_script=$(basename "$0")
@@ -12,16 +12,16 @@ log_debug "Script [$this_script] has started [$(date)]"
 
 # Copy template files to temp
 logDir=$TMP_DIR/$LOG_NS
-mkdir -p $logDir
-cp -R logging/eventrouter/eventrouter.yaml $logDir/eventrouter.yaml
-cp -R logging/node-placement/eventrouter-wnp.yaml $logDir/eventrouter-wnp.yaml
+mkdir -p "$logDir"
+cp -R logging/eventrouter/eventrouter.yaml "$logDir"/eventrouter.yaml
+cp -R logging/node-placement/eventrouter-wnp.yaml "$logDir"/eventrouter-wnp.yaml
 
 # Replace placeholders
 log_debug "Replacing logging namespace for files in [$logDir]"
 if echo "$OSTYPE" | grep 'darwin' >/dev/null 2>&1; then
-  sed -i '' "s/__LOG_NS__/$LOG_NS/g" $logDir/eventrouter*.yaml
+  sed -i '' "s/__LOG_NS__/$LOG_NS/g" "$logDir"/eventrouter*.yaml
 else
-  sed -i "s/__LOG_NS__/$LOG_NS/g" $logDir/eventrouter*.yaml
+  sed -i "s/__LOG_NS__/$LOG_NS/g" "$logDir"/eventrouter*.yaml
 fi
 
 # Output Kubernetes events as pseudo-log messages?
@@ -48,10 +48,10 @@ log_info "Deploying Event Router ..."
 
 if [ "$LOG_NODE_PLACEMENT_ENABLE" == "true" ]; then
   log_info "Enabling eventrouter for workload node placement"
-  kubectl apply -f $logDir/eventrouter-wnp.yaml
+  kubectl apply -f "$logDir"/eventrouter-wnp.yaml
 else
   log_debug "Workload node placement support is disabled for eventrouter"
-  kubectl apply -f $logDir/eventrouter.yaml
+  kubectl apply -f "$logDir"/eventrouter.yaml
 fi
 
 log_info "Event Router has been deployed"

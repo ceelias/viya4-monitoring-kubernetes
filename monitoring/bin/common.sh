@@ -8,10 +8,10 @@ if [ "$SAS_MONITORING_COMMON_SOURCED" = "" ]; then
   source bin/common.sh
 
   if [ -f "$USER_DIR/monitoring/user.env" ]; then
-    userEnv=$(grep -v '^[[:blank:]]*$' $USER_DIR/monitoring/user.env | grep -v '^#' | xargs)
+    userEnv=$(grep -v '^[[:blank:]]*$' "$USER_DIR"/monitoring/user.env | grep -v '^#' | xargs)
     log_verbose "Loading user environment file: $USER_DIR/monitoring/user.env"
     if [ "$userEnv" ]; then
-      export $userEnv
+      export "$userEnv"
     fi
   fi
 

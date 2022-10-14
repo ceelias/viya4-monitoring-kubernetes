@@ -3,7 +3,7 @@
 # Copyright © 2020, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.."
 source monitoring/bin/common.sh
 source bin/service-url-include.sh
 
@@ -16,15 +16,15 @@ if [ "$OPENSHIFT_CLUSTER" == "true" ]; then
 fi
 
 source bin/tls-include.sh
-if verify_cert_generator $MON_NS prometheus alertmanager grafana; then
+if verify_cert_generator "$MON_NS" prometheus alertmanager grafana; then
   log_debug "cert generator check OK [$cert_generator_ok]"
 else
   log_error "One or more required TLS certs do not exist and the expected certificate generator mechanism [$cert_generator] is not available to create the missing certs"
   exit 1
 fi
 
-helm2ReleaseCheck v4m-$MON_NS
-helm2ReleaseCheck prometheus-$MON_NS
+helm2ReleaseCheck v4m-"$MON_NS"
+helm2ReleaseCheck prometheus-"$MON_NS"
 checkDefaultStorageClass
 
 export HELM_DEBUG="${HELM_DEBUG:-false}"
@@ -40,8 +40,8 @@ if [ "$HELM_DEBUG" == "true" ]; then
   helmDebug="--debug"
 fi
 
-if [ -z "$(kubectl get ns $MON_NS -o name 2>/dev/null)" ]; then
-  kubectl create ns $MON_NS
+if [ -z "$(kubectl get ns "$MON_NS" -o name 2>/dev/null)" ]; then
+  kubectl create ns "$MON_NS"
 fi
 
 set -e
@@ -70,10 +70,10 @@ if [ "$PROM_OPERATOR_CRD_UPDATE" == "true" ]; then
   crds=(alertmanagerconfigs alertmanagers prometheuses prometheusrules podmonitors servicemonitors thanosrulers probes)
   for crd in "${crds[@]}"; do
     crdURL="https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$PROM_OPERATOR_CRD_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_$crd.yaml"
-    if kubectl get crd $crd.monitoring.coreos.com 1>/dev/null 2>&1; then
-      kubectl replace -f $crdURL --insecure-skip-tls-verify
+    if kubectl get crd "$crd".monitoring.coreos.com 1>/dev/null 2>&1; then
+      kubectl replace -f "$crdURL" --insecure-skip-tls-verify
     else
-      kubectl create -f $crdURL --insecure-skip-tls-verify
+      kubectl create -f "$crdURL" --insecure-skip-tls-verify
     fi
   done
 else
@@ -94,7 +94,7 @@ fi
 tlsValuesFile=$TMP_DIR/empty.yaml
 if [ "$TLS_ENABLE" == "true" ]; then
   apps=(prometheus alertmanager grafana)
-  create_tls_certs $MON_NS monitoring ${apps[@]}
+  create_tls_certs "$MON_NS" monitoring ${apps[@]}
 
   tlsValuesFile=monitoring/tls/values-prom-operator-tls.yaml
   log_debug "Including TLS response file $tlsValuesFile"
@@ -104,16 +104,16 @@ if [ "$TLS_ENABLE" == "true" ]; then
   if [ "$MON_TLS_PATH_INGRESS" == "true" ]; then
     grafanaDS=grafana-datasource-prom-https-path.yaml
   fi
-  kubectl delete cm -n $MON_NS --ignore-not-found grafana-datasource-prom-https
-  kubectl create cm -n $MON_NS grafana-datasource-prom-https --from-file monitoring/tls/$grafanaDS
-  kubectl label cm -n $MON_NS grafana-datasource-prom-https grafana_datasource=1 sas.com/monitoring-base=kube-viya-monitoring
+  kubectl delete cm -n "$MON_NS" --ignore-not-found grafana-datasource-prom-https
+  kubectl create cm -n "$MON_NS" grafana-datasource-prom-https --from-file monitoring/tls/$grafanaDS
+  kubectl label cm -n "$MON_NS" grafana-datasource-prom-https grafana_datasource=1 sas.com/monitoring-base=kube-viya-monitoring
 
   # node-exporter TLS
   log_verbose "Enabling Prometheus node-exporter for TLS"
-  kubectl delete cm -n $MON_NS node-exporter-tls-web-config --ignore-not-found
+  kubectl delete cm -n "$MON_NS" node-exporter-tls-web-config --ignore-not-found
   sleep 1
-  kubectl create cm -n $MON_NS node-exporter-tls-web-config --from-file monitoring/tls/node-exporter-web.yaml
-  kubectl label cm -n $MON_NS node-exporter-tls-web-config sas.com/monitoring-base=kube-viya-monitoring
+  kubectl create cm -n "$MON_NS" node-exporter-tls-web-config --from-file monitoring/tls/node-exporter-web.yaml
+  kubectl label cm -n "$MON_NS" node-exporter-tls-web-config sas.com/monitoring-base=kube-viya-monitoring
 fi
 
 nodePortValuesFile=$TMP_DIR/empty.yaml
@@ -123,7 +123,7 @@ if [ "$PROM_NODEPORT_ENABLE" == "true" ]; then
   nodePortValuesFile=monitoring/values-prom-nodeport.yaml
 fi
 
-if helm3ReleaseExists prometheus-operator $MON_NS; then
+if helm3ReleaseExists prometheus-operator "$MON_NS"; then
   promRelease=prometheus-operator
   promName=prometheus-operator
 else
@@ -132,7 +132,7 @@ else
 fi
 log_verbose "User response file: [$PROM_OPER_USER_YAML]"
 log_info "Deploying the kube-prometheus stack. This may take a few minutes ..."
-if helm3ReleaseExists $promRelease $MON_NS; then
+if helm3ReleaseExists $promRelease "$MON_NS"; then
   log_verbose "Upgrading via Helm ($(date) - timeout 20m)"
 else
   grafanaPwd="$GRAFANA_ADMIN_PASSWORD"
@@ -146,20 +146,20 @@ fi
 
 # See https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack#from-21x-to-22x
 if [ "$V4M_CURRENT_VERSION_MAJOR" == "1" ] && [[ "$V4M_CURRENT_VERSION_MINOR" =~ [0-5] ]]; then
-  kubectl delete -n $MON_NS --ignore-not-found \
+  kubectl delete -n "$MON_NS" --ignore-not-found \
     deployments.apps \
     -l app.kubernetes.io/instance=v4m-prometheus-operator,app.kubernetes.io/name=kube-state-metrics
 fi
 
 KUBE_PROM_STACK_CHART_VERSION=${KUBE_PROM_STACK_CHART_VERSION:-36.6.1}
 helm $helmDebug upgrade --install $promRelease \
-  --namespace $MON_NS \
+  --namespace "$MON_NS" \
   -f monitoring/values-prom-operator.yaml \
-  -f $istioValuesFile \
+  -f "$istioValuesFile" \
   -f $tlsValuesFile \
   -f $nodePortValuesFile \
-  -f $wnpValuesFile \
-  -f $PROM_OPER_USER_YAML \
+  -f "$wnpValuesFile" \
+  -f "$PROM_OPER_USER_YAML" \
   --atomic \
   --timeout 20m \
   --set nameOverride=$promName \
@@ -168,14 +168,14 @@ helm $helmDebug upgrade --install $promRelease \
   --set kube-state-metrics.fullnameOverride=$promName-kube-state-metrics \
   --set grafana.fullnameOverride=$promName-grafana \
   --set grafana.adminPassword="$grafanaPwd" \
-  --version $KUBE_PROM_STACK_CHART_VERSION \
+  --version "$KUBE_PROM_STACK_CHART_VERSION" \
   prometheus-community/kube-prometheus-stack
 
 sleep 2
 
 if [ "$TLS_ENABLE" == "true" ]; then
   log_verbose "Patching Grafana ServiceMonitor for TLS"
-  kubectl patch servicemonitor -n $MON_NS $promName-grafana --type=json \
+  kubectl patch servicemonitor -n "$MON_NS" $promName-grafana --type=json \
     -p='[{"op": "replace", "path": "/spec/endpoints/0/scheme", "value":"https"},{"op": "replace", "path": "/spec/endpoints/0/tlsConfig", "value":{}},{"op": "replace", "path": "/spec/endpoints/0/tlsConfig/insecureSkipVerify", "value":true}]'
 fi
 
@@ -184,7 +184,7 @@ log_verbose "Deploying cluster ServiceMonitors"
 
 # NGINX
 set +e
-kubectl get ns $NGINX_NS 2>/dev/null
+kubectl get ns "$NGINX_NS" 2>/dev/null
 if [ $? == 0 ]; then
   nginxFound=true
 fi
@@ -192,30 +192,30 @@ set -e
 
 if [ "$nginxFound" == "true" ]; then
   log_verbose "NGINX found. Deploying podMonitor to [$NGINX_NS] namespace"
-  kubectl apply -n $NGINX_NS -f monitoring/monitors/kube/podMonitor-nginx.yaml 2>/dev/null
+  kubectl apply -n "$NGINX_NS" -f monitoring/monitors/kube/podMonitor-nginx.yaml 2>/dev/null
 fi
 
 # Eventrouter ServiceMonitor
-kubectl apply -n $MON_NS -f monitoring/monitors/kube/podMonitor-eventrouter.yaml 2>/dev/null
+kubectl apply -n "$MON_NS" -f monitoring/monitors/kube/podMonitor-eventrouter.yaml 2>/dev/null
 
 # Elasticsearch ServiceMonitor
-kubectl apply -n $MON_NS -f monitoring/monitors/logging/serviceMonitor-elasticsearch.yaml
+kubectl apply -n "$MON_NS" -f monitoring/monitors/logging/serviceMonitor-elasticsearch.yaml
 
 # Fluent Bit ServiceMonitors
-kubectl apply -n $MON_NS -f monitoring/monitors/logging/serviceMonitor-fluent-bit.yaml
-kubectl apply -n $MON_NS -f monitoring/monitors/logging/serviceMonitor-fluent-bit-v2.yaml
+kubectl apply -n "$MON_NS" -f monitoring/monitors/logging/serviceMonitor-fluent-bit.yaml
+kubectl apply -n "$MON_NS" -f monitoring/monitors/logging/serviceMonitor-fluent-bit-v2.yaml
 
 # Rules
 log_verbose "Adding Prometheus recording rules"
 for f in monitoring/rules/viya/rules-*.yaml; do
-  kubectl apply -n $MON_NS -f $f
+  kubectl apply -n "$MON_NS" -f "$f"
 done
 
-kubectl get prometheusrule -n $MON_NS v4m-kubernetes-apps 2>/dev/null
+kubectl get prometheusrule -n "$MON_NS" v4m-kubernetes-apps 2>/dev/null
 if [ $? == 0 ]; then
   log_verbose "Patching KubeHpaMaxedOut rule"
   # Fixes the issue of false positives when max replicas == 1
-  kubectl patch prometheusrule --type='json' -n $MON_NS v4m-kubernetes-apps --patch "$(cat monitoring/kube-hpa-alert-patch.json)"
+  kubectl patch prometheusrule --type='json' -n "$MON_NS" v4m-kubernetes-apps --patch "$(cat monitoring/kube-hpa-alert-patch.json)"
 else
   log_debug "PrometheusRule $MON_NS/v4m-kubernetes-apps does not exist"
 fi
@@ -246,13 +246,13 @@ set +e
 get_ingress_ports
 
 # get URLs for Grafana, Prometheus and AlertManager
-gf_url=$(get_service_url $MON_NS v4m-grafana "false")
+gf_url=$(get_service_url "$MON_NS" v4m-grafana "false")
 # pr_url=$(get_url $MON_NS v4m-prometheus  "false")
 # am_url=$(get_url $MON_NS v4m-alertmanager  "false")
 set -e
 
 # If a deployment with the old name exists, remove it first
-if helm3ReleaseExists v4m $MON_NS; then
+if helm3ReleaseExists v4m "$MON_NS"; then
   log_verbose "Removing outdated SAS Viya Monitoring Helm chart release from [$MON_NS] namespace"
   helm uninstall -n "$MON_NS" "v4m"
 fi

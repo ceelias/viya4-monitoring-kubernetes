@@ -3,7 +3,7 @@
 # Copyright © 2022, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.."
 source logging/bin/common.sh
 
 ##################################
@@ -33,8 +33,8 @@ export LOGGING_DRIVER=true
 checkDefaultStorageClass
 
 # Create namespace if it doesn't exist
-if [ "$(kubectl get ns $LOG_NS -o name 2>/dev/null)" == "" ]; then
-  kubectl create ns $LOG_NS
+if [ "$(kubectl get ns "$LOG_NS" -o name 2>/dev/null)" == "" ]; then
+  kubectl create ns "$LOG_NS"
 fi
 
 set -e
@@ -113,7 +113,7 @@ if [ "$OPENSHIFT_ROUTES_ENABLE" == "true" ]; then
     servicelist="OS OSD"
   fi
 
-  bin/show_app_url.sh $servicelist
+  bin/show_app_url.sh "$servicelist"
 
 else
   log_info "Environment variable [OPENSHIFT_ROUTES_ENABLE] is not set to 'true'; continuing WITHOUT deploying OpenShift Routes"
@@ -132,7 +132,7 @@ logging/bin/deploy_servicemonitors_openshift.sh
 log_info "STEP 10: Updating version info"
 
 # If a deployment with the old name exists, remove it first
-if helm3ReleaseExists v4m $LOG_NS; then
+if helm3ReleaseExists v4m "$LOG_NS"; then
   log_verbose "Removing outdated SAS Viya Monitoring Helm chart release from [$LOG_NS] namespace"
   helm uninstall -n "$LOG_NS" "v4m"
 fi

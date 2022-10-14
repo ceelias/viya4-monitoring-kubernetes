@@ -9,7 +9,7 @@ function get_odfe_pvcs {
   namespace=$1
   role=$2
 
-  kubectl -n $namespace get pvc -l role=$role -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.volumeName}{"\t"}{.spec.resources.requests.storage}{"\t"}{.spec.storageClassName}{"\n"}{end}'
+  kubectl -n "$namespace" get pvc -l role="$role" -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.volumeName}{"\t"}{.spec.resources.requests.storage}{"\t"}{.spec.storageClassName}{"\n"}{end}'
 }
 
 function patch_odfe_pvc {
@@ -25,35 +25,35 @@ function patch_odfe_pvc {
   log_debug "PVC: $pvcName PV:$pvName SIZE:$pvcSize StorageClass: $storageClass New PVC Name:$newPVCName"
 
   log_debug "Patching reclaimPolicy on PV [pvName:$pvName]"
-  kubectl patch pv $pvName -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'
+  kubectl patch pv "$pvName" -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'
 
   log_debug "Creating new PVC [$newPVCName]"
-  printf "apiVersion: v1 \nkind: PersistentVolumeClaim \nmetadata:\n  name: $newPVCName\nspec:\n  accessModes:\n  - ReadWriteOnce\n  storageClassName: $storageClass\n  resources:\n    requests:\n      storage: $pvcSize\n  volumeName: $pvName" | kubectl -n $LOG_NS apply -f -
+  printf "apiVersion: v1 \nkind: PersistentVolumeClaim \nmetadata:\n  name: $newPVCName\nspec:\n  accessModes:\n  - ReadWriteOnce\n  storageClassName: $storageClass\n  resources:\n    requests:\n      storage: $pvcSize\n  volumeName: $pvName" | kubectl -n "$LOG_NS" apply -f -
 
   # delete ODFE pvc
   log_debug "Deleting existing ODFE PVC [$pvcName]"
-  kubectl -n $LOG_NS delete pvc $pvcName
+  kubectl -n "$LOG_NS" delete pvc "$pvcName"
 
   # remove link w/ODFE PVC from PV
   log_debug "Removing obsolete link between PVC [$pvcName] and PV [$pvName]"
-  kubectl patch pv $pvName --type json -p '[{"op": "remove", "path": "/spec/claimRef"}]'
+  kubectl patch pv "$pvName" --type json -p '[{"op": "remove", "path": "/spec/claimRef"}]'
 
   # link PV to new PVC
   log_debug "Explicitly linking PV [$pvName] to new PVC [$newPVCName]"
-  kubectl patch pv $pvName -p '{"spec": {"claimRef": {"kind": "PersistentVolumeClaim", "namespace": "'$LOG_NS'", "name": "'$newPVCName'"}}}'
+  kubectl patch pv "$pvName" -p '{"spec": {"claimRef": {"kind": "PersistentVolumeClaim", "namespace": "'"$LOG_NS"'", "name": "'"$newPVCName"'"}}}'
 
   # Reset policy so PV is deleted when PVC is deleted
   log_debug "Resetting reclaimPolicy on PV [pvName:$pvName]"
-  kubectl patch pv $pvName -p '{"spec":{"persistentVolumeReclaimPolicy":"Delete"}}'
+  kubectl patch pv "$pvName" -p '{"spec":{"persistentVolumeReclaimPolicy":"Delete"}}'
 }
 
 # get list of existing ODFE 'master' pvcs
-IFS=$'\n' odfe_master_pvcs=($(get_odfe_pvcs $LOG_NS master))
+IFS=$'\n' odfe_master_pvcs=($(get_odfe_pvcs "$LOG_NS" master))
 odfe_master_pvc_count=${#odfe_master_pvcs[@]}
 log_debug "Detected [$odfe_master_pvc_count] PVCs associated with role [master]"
 
 # get list of existing ODFE 'data' pvcs
-IFS=$'\n' odfe_data_pvcs=($(get_odfe_pvcs $LOG_NS data))
+IFS=$'\n' odfe_data_pvcs=($(get_odfe_pvcs "$LOG_NS" data))
 odfe_data_pvc_count=${#odfe_data_pvcs[@]}
 log_debug "Detected [$odfe_data_pvc_count] PVCs associated with role [data]"
 
@@ -91,7 +91,7 @@ elif [ "$odfe_master_pvc_count" -eq 1 ] && [ "$odfe_data_pvc_count" -eq 1 ]; the
   log_info "Note: any previously captured log messages will no longer be available."
 
   # Remove OpenSearch-specific configMap
-  kubectl -n $LOG_NS delete configmap run-securityadmin.sh --ignore-not-found
+  kubectl -n "$LOG_NS" delete configmap run-securityadmin.sh --ignore-not-found
 
   exit 1
 

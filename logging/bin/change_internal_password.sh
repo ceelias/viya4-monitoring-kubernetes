@@ -3,7 +3,7 @@
 # Copyright © 2020, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cd "$(dirname $BASH_SOURCE)/../.."
+cd "$(dirname "$BASH_SOURCE")/../.."
 CHECK_HELM=false
 source logging/bin/common.sh
 source logging/bin/secrets-include.sh
@@ -78,14 +78,14 @@ fi
 
 if [ "$USER_NAME" != "logadm" ]; then
   #get current credentials from Kubernetes secret
-  if [ -z "$(kubectl -n $LOG_NS get secret internal-user-$USER_NAME -o=name 2>/dev/null)" ]; then
+  if [ -z "$(kubectl -n "$LOG_NS" get secret internal-user-"$USER_NAME" -o=name 2>/dev/null)" ]; then
     log_warn "The Kubernetes secret [internal-user-$USER_NAME], containing credentials for the user, was not found."
     # TO DO: How to handle case where secret does not exist?  Should never happen.
     # exit
     ES_USER=$USER_NAME
   else
-    ES_USER=$(kubectl -n $LOG_NS get secret internal-user-$USER_NAME -o=jsonpath="{.data.\username}" | base64 --decode)
-    ES_PASSWD=$(kubectl -n $LOG_NS get secret internal-user-$USER_NAME -o=jsonpath="{.data.password}" | base64 --decode)
+    ES_USER=$(kubectl -n "$LOG_NS" get secret internal-user-"$USER_NAME" -o=jsonpath="{.data.\username}" | base64 --decode)
+    ES_PASSWD=$(kubectl -n "$LOG_NS" get secret internal-user-"$USER_NAME" -o=jsonpath="{.data.password}" | base64 --decode)
   fi
 else
   ES_USER=$USER_NAME
@@ -105,18 +105,18 @@ if [[ $response == 4* ]]; then
 
     log_debug "Will attempt to use admin credentials to change password for [$USER_NAME]"
 
-    ES_ADMIN_USER=$(kubectl -n $LOG_NS get secret internal-user-admin -o=jsonpath="{.data.username}" | base64 --decode)
-    ES_ADMIN_PASSWD=$(kubectl -n $LOG_NS get secret internal-user-admin -o=jsonpath="{.data.password}" | base64 --decode)
+    ES_ADMIN_USER=$(kubectl -n "$LOG_NS" get secret internal-user-admin -o=jsonpath="{.data.username}" | base64 --decode)
+    ES_ADMIN_PASSWD=$(kubectl -n "$LOG_NS" get secret internal-user-admin -o=jsonpath="{.data.password}" | base64 --decode)
 
     # make sure hash utility is executable
-    kubectl -n $LOG_NS exec $targetpod -- chmod +x $toolsrootdir/tools/hash.sh
+    kubectl -n "$LOG_NS" exec $targetpod -- chmod +x $toolsrootdir/tools/hash.sh
     # get hash of new password
-    hashed_passwd=$(kubectl -n $LOG_NS exec $targetpod -- $toolsrootdir/tools/hash.sh -p $NEW_PASSWD)
+    hashed_passwd=$(kubectl -n "$LOG_NS" exec $targetpod -- $toolsrootdir/tools/hash.sh -p "$NEW_PASSWD")
     rc=$?
     if [ "$rc" == "0" ]; then
 
       #try changing password using admin password
-      response=$(curl -s -o /dev/null -w "%{http_code}" -XPATCH "$sec_api_url/internalusers/$ES_USER" -H 'Content-Type: application/json' -d'[{"op" : "replace", "path" : "hash", "value" : "'"$hashed_passwd"'"}]' --user $ES_ADMIN_USER:$ES_ADMIN_PASSWD --insecure)
+      response=$(curl -s -o /dev/null -w "%{http_code}" -XPATCH "$sec_api_url/internalusers/$ES_USER" -H 'Content-Type: application/json' -d'[{"op" : "replace", "path" : "hash", "value" : "'"$hashed_passwd"'"}]' --user "$ES_ADMIN_USER":"$ES_ADMIN_PASSWD" --insecure)
       if [[ "$response" == "404" ]]; then
         log_error "Unable to change password for [$USER_NAME] because that user does not exist. [$response]"
         success="non-existent_user"
@@ -150,32 +150,32 @@ if [[ $response == 4* ]]; then
     log_debug "Attempting to change password for user [admin] using the admin certs rather than cached password"
 
     # make sure hash utility is executable
-    kubectl -n $LOG_NS exec $targetpod -- chmod +x $toolsrootdir/tools/hash.sh
+    kubectl -n "$LOG_NS" exec $targetpod -- chmod +x $toolsrootdir/tools/hash.sh
     # get hash of new password
-    hashed_passwd=$(kubectl -n $LOG_NS exec $targetpod -- $toolsrootdir/tools/hash.sh -p $NEW_PASSWD)
+    hashed_passwd=$(kubectl -n "$LOG_NS" exec $targetpod -- $toolsrootdir/tools/hash.sh -p "$NEW_PASSWD")
 
     #obtain admin cert
-    rm -f $TMP_DIR/tls.crt
-    admin_tls_cert=$(kubectl -n $LOG_NS get secrets es-admin-tls-secret -o "jsonpath={.data['tls\.crt']}")
+    rm -f "$TMP_DIR"/tls.crt
+    admin_tls_cert=$(kubectl -n "$LOG_NS" get secrets es-admin-tls-secret -o "jsonpath={.data['tls\.crt']}")
     if [ -z "$admin_tls_cert" ]; then
       log_error "Unable to obtain admin certs from secret [es-admin-tls-secret] in the [$LOG_NS] namespace. Password for [$USER_NAME] has NOT been changed."
       success="false"
     else
       log_debug "File tls.crt obtained from Kubernetes secret"
-      echo "$admin_tls_cert" | base64 --decode >$TMP_DIR/admin_tls.crt
+      echo "$admin_tls_cert" | base64 --decode >"$TMP_DIR"/admin_tls.crt
 
       #obtain admin TLS key
-      rm -f $TMP_DIR/tls.key
-      admin_tls_key=$(kubectl -n $LOG_NS get secrets es-admin-tls-secret -o "jsonpath={.data['tls\.key']}")
+      rm -f "$TMP_DIR"/tls.key
+      admin_tls_key=$(kubectl -n "$LOG_NS" get secrets es-admin-tls-secret -o "jsonpath={.data['tls\.key']}")
       if [ -z "$admin_tls_key" ]; then
         log_error "Unable to obtain admin cert key from secret [es-admin-tls-secret] in the [$LOG_NS] namespace. Password for [$USER_NAME] has NOT been changed."
         success="false"
       else
         log_debug "File tls.key obtained from Kubernetes secret"
-        echo "$admin_tls_key" | base64 --decode >$TMP_DIR/admin_tls.key
+        echo "$admin_tls_key" | base64 --decode >"$TMP_DIR"/admin_tls.key
 
         # Attempt to change password using admin certs
-        response=$(curl -s -o /dev/null -w "%{http_code}" -XPATCH "$sec_api_url/internalusers/$ES_USER" -H 'Content-Type: application/json' -d'[{"op" : "replace", "path" : "hash", "value" : "'"$hashed_passwd"'"}]' --cert $TMP_DIR/admin_tls.crt --key $TMP_DIR/admin_tls.key --insecure)
+        response=$(curl -s -o /dev/null -w "%{http_code}" -XPATCH "$sec_api_url/internalusers/$ES_USER" -H 'Content-Type: application/json' -d'[{"op" : "replace", "path" : "hash", "value" : "'"$hashed_passwd"'"}]' --cert "$TMP_DIR"/admin_tls.crt --key "$TMP_DIR"/admin_tls.key --insecure)
         if [[ $response == 2* ]]; then
           log_debug "Password for [$USER_NAME] has been changed in OpenSearch. [$response]"
           success="true"
@@ -200,14 +200,14 @@ if [ "$success" == "true" ]; then
   if [ "$USER_NAME" != "logadm" ]; then
     log_debug "Trying to store the updated credentials in the corresponding Kubernetes secret [internal-user-$USER_NAME]."
 
-    kubectl -n $LOG_NS delete secret internal-user-$USER_NAME --ignore-not-found
+    kubectl -n "$LOG_NS" delete secret internal-user-"$USER_NAME" --ignore-not-found
 
     labels="managed-by=v4m-es-script"
     if [ "$autogenerated_password" == "true" ]; then
       labels="$labels autogenerated_password=true"
     fi
 
-    create_user_secret internal-user-$USER_NAME $USER_NAME $NEW_PASSWD "$labels"
+    create_user_secret internal-user-"$USER_NAME" "$USER_NAME" "$NEW_PASSWD" "$labels"
     rc=$?
     if [ "$rc" != "0" ]; then
       log_error "IMPORTANT! A Kubernetes secret holding the password for $USER_NAME no longer exists."
