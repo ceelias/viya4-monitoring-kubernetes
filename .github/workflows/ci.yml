@@ -1,16 +1,17 @@
-name: shellcheck
+name: checkshell
 on:
   - pull_request
-env:
-  GITHUB_BEFORE_SHA: ${{ github.event.before }}
-
 jobs:
-  check:
-    runs-on: ubuntu-20.04
+  sh-checker:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      # Run our action
-      - name: Checker and formatter 
-        uses: ashthespy/action-shell@v1
+      - uses: actions/checkout@v3
+      - name: Run the sh-checker
+        uses: luizm/action-sh-checker@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHELLCHECK_OPTS: -e SC1004 # exclude some shellcheck warnings.
+          SHFMT_OPTS: -s # arguments to shfmt.
         with:
-         only_changed: 'true'
+          sh_checker_comment: true
+          sh_checker_exclude: ".terraform ^dir/example.sh"
