@@ -17,6 +17,7 @@ jobs:
         chmod +x ./.github/workflows/artifact/generate_inventory.sh
         ./.github/workflows/artifact/generate_inventory.sh
         ls
+        cat ARTIFACT_INVENTORY.md
       shell: bash
     - name: Commit files # transfer the new html files back into the repository
       run: |
