@@ -11,9 +11,9 @@ jobs:
     - uses: actions/checkout@v2
 
     # Runs commands using the runners shell
-    - name: Run the build php script
+    - name: Run the generate script
       run: |
-        ./artifact/generate_inventory.sh
+        ./github/workflows/artifact/generate_inventory.sh
     - name: Commit files # transfer the new html files back into the repository
       run: |
         git config --local user.name "ceelias"
