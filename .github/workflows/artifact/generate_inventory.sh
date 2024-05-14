@@ -8,8 +8,8 @@
 #       charts used by the project.
 
 V4M_BUILD_REPO=${V4M_BUILD_REPO:-"../v4m-build"}
-V4M_REPO=${V4M_REPO:-"../../../../viya4-monitoring-kubernetes"}
-cd $V4M_REPO
+# V4M_REPO=${V4M_REPO:-"/home/runner/work/viya4-monitoring-kubernetes/viya4-monitoring-kubernetes"}
+# cd $V4M_REPO
 
 CHECK_HELM=false
 CHECK_KUBERNETES=false
