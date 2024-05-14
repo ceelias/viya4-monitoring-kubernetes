@@ -50,7 +50,7 @@ This table identifies the Helm charts used by SAS Viya Monitoring for Kubernetes
 
 | Subsystem | Component | Helm Chart Repository | Helm Chart Name |Helm Chart Version | Helm Archive File Name|
 |--|--|--|--|--|--|
-| Logging | Elasticsearch Exporter| prometheus-community | prometheus-elasticsearch-exporter | 5.6.0 | prometheus-community/prometheus-elasticsearch-exporter-5.6.0.tgz |
+| Logging | Elasticsearch Exporter| prometheus-community | prometheus-elasticsearch-exporter | 5.6.2 | prometheus-community/prometheus-elasticsearch-exporter-5.6.2.tgz |
 | Logging | Fluent Bit| fluent | fluent-bit | 0.43.0 | fluent/fluent-bit-0.43.0.tgz |
 | Logging | OpenSearch| opensearch | opensearch | 2.18.0 | opensearch/opensearch-2.18.0.tgz |
 | Logging | OpenSearch Dashboard| opensearch | opensearch-dashboards | 2.16.0 | opensearch/opensearch-dashboards-2.16.0.tgz |
