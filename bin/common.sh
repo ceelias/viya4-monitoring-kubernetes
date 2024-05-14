@@ -46,6 +46,26 @@ if [ "$SAS_COMMON_SOURCED" = "" ]; then
       exit 1
     fi
 
+    # Load component Helm chart version infomation
+    # NOTE: This is loaded prior to the USER_DIR to allow
+    # overriding these defaults via USER_DIR user.env files
+    if [ -f "component_versions.env" ]; then
+        userEnv=$(grep -v '^[[:blank:]]*$' component_versions.env | grep -v '^#' | xargs)
+        if [ "$userEnv" != "" ]; then
+          log_debug "Loading global user environment file: component_versions.env"
+          if [ "$userEnv" != "" ]; then
+            export $userEnv
+          fi
+        fi
+    else
+        log_debug "No component_versions.env file found"
+    fi
+
+    if [ "$V4M_OMIT_IMAGE_KEYS" == "true" ]; then
+       log_warn "******This feature is NOT intended for use outside the project maintainers*******"
+       log_warn "Environment variable V4M_OMIT_IMAGE_KEYS set to [true]; container image information from component_versions.env will be ignored."
+    fi
+
     export USER_DIR=${USER_DIR:-$(pwd)}
     if [ -d "$USER_DIR" ]; then
       # Resolve full path
@@ -63,6 +83,8 @@ if [ "$SAS_COMMON_SOURCED" = "" ]; then
 
     log_debug "Working directory: $(pwd)"
     log_info "User directory: $USER_DIR"
+
+    export AIRGAP_DEPLOYMENT=${AIRGAP_DEPLOYMENT:-false}
 
     CHECK_HELM=${CHECK_HELM:-true}
     if [ "$CHECK_HELM" == "true" ]; then
@@ -182,6 +204,59 @@ function validateNamespace {
   fi
 }
 
+
+function randomPassword {
+  date +%s | sha256sum | base64 | head -c 32 ; echo
+}
+
+function disable_sa_token_automount {
+  local ns sa_name should_disable
+  ns=$1
+  sa_name=$2
+  should_disable=${SEC_DISABLE_SA_TOKEN_AUTOMOUNT:-true}
+  
+  if [ "$should_disable" == "true" ]; then
+    if [ -n "$(kubectl -n "$ns" get serviceAccount "$sa_name" -o name 2>/dev/null)" ]; then
+      log_debug "Disabling automount of API tokens for serviceAccount [$ns/$sa_name]"
+      kubectl -n $ns patch serviceAccount $sa_name -p '{"automountServiceAccountToken":false}'
+    else
+      log_debug "ServiceAccount [$ns/$sa_name] not found. Skipping patch"
+    fi
+  else
+    log_debug "NOT disabling token automount serviceAccount [$ns/$sa_name]; SEC_DISABLE_SA_TOKEN_AUTOMOUNT set to [$SEC_DISABLE_SA_TOKEN_AUTOMOUNT]"
+  fi
+}
+
+function enable_pod_token_automount {
+  local ns resource_type resource_name should_disable
+  ns=$1
+  resource_type=$2
+  resource_name=$3
+  should_disable=${SEC_DISABLE_SA_TOKEN_AUTOMOUNT:-true}
+
+  if [ "$should_disable" == "true" ]; then
+     log_debug "Enabling automount of API tokens for pods deployed via [$resource_type/$resource_name]"
+
+     if [ "$resource_type" == "daemonset" ] || [ "$resource_type" == "deployment" ]; then
+        kubectl -n $ns patch $resource_type  $resource_name -p '{"spec": {"template": {"spec": {"automountServiceAccountToken":true}}}}'
+     else
+        log_error "Invalid request to function [${FUNCNAME[0]}]; unsupported resource_type [$resource_type]"
+        return 1
+     fi
+  else
+     log_debug "NOT enabling token automount on pods for [$ns/$resource_type/$resource_name]; SEC_DISABLE_SA_TOKEN_AUTOMOUNT set to [$SEC_DISABLE_SA_TOKEN_AUTOMOUNT]"
+  fi
+}
+
+export -f checkDefaultStorageClass
+export -f validateTenantID
+export -f validateNamespace
+export -f randomPassword
+export -f trap_add
+export -f errexit_msg
+export -f disable_sa_token_automount
+export -f enable_pod_token_automount
+
 function parseFullImage {
    fullImage="$1"
    unset REGISTRY REPOS IMAGE VERSION FULL_IMAGE_ESCAPED
@@ -199,6 +274,8 @@ function parseFullImage {
       return 1
    fi
 }
+
+
 function v4m_replace {
 
     if echo "$OSTYPE" | grep 'darwin' > /dev/null 2>&1; then
@@ -208,13 +285,72 @@ function v4m_replace {
     fi
 }
 
-function randomPassword {
-  date +%s | sha256sum | base64 | head -c 32 ; echo
+function generateImageKeysFile {
+
+   #arg1 Full container image
+   #arg2 name of template file
+   #arg3 prefix to insert in placeholders (optional)
+
+   local pullsecret_text
+
+   if ! parseFullImage "$1";  then
+      log_error "Unable to parse full image [$1]"
+      return 1
+   fi
+
+   prefix=${3:-""}
+
+   imageKeysFile="$TMP_DIR/imageKeysFile.yaml"
+   template_file=$2
+
+   if [ "$template_file" != "$imageKeysFile" ]; then
+      rm -f  $imageKeysFile
+      cp $template_file  $imageKeysFile
+   else
+      log_debug "Modifying an existing imageKeysFile"
+   fi
+
+   if [ "$V4M_OMIT_IMAGE_KEYS" == "true" ]; then
+      cp $TMP_DIR/empty.yaml $imageKeysFile
+      return 0
+   fi
+
+   if [ "$AIRGAP_DEPLOYMENT" == "true" ]; then
+      GLOBAL_REGISTRY_OSBUG="$AIRGAP_REGISTRY"
+      GLOBAL_REGISTRY="$AIRGAP_REGISTRY"
+      REGISTRY="$AIRGAP_REGISTRY"
+
+      if [ -n "$AIRGAP_IMAGE_PULL_SECRET_NAME" ]; then
+         pullsecrets_text="[name: ""$AIRGAP_IMAGE_PULL_SECRET_NAME""]"
+         pullsecret_text="$AIRGAP_IMAGE_PULL_SECRET_NAME"
+      else
+         pullsecrets_text="[]"
+         pullsecret_text="null"
+      fi
+   else
+      GLOBAL_REGISTRY_OSBUG='""'
+      GLOBAL_REGISTRY="null"
+      pullsecrets_text="[]"
+      pullsecret_text="null"
+   fi
+
+   v4m_pullPolicy=${V4M_PULL_POLICY:-"IfNotPresent"}
+
+   v4m_replace "__${prefix}GLOBAL_REGISTRY_OSBUG__"    "$GLOBAL_REGISTRY_OSBUG"          "$imageKeysFile"
+   v4m_replace "__${prefix}GLOBAL_REGISTRY__"    "$GLOBAL_REGISTRY"          "$imageKeysFile"
+   v4m_replace "__${prefix}IMAGE_REGISTRY__"     "$REGISTRY"                 "$imageKeysFile"
+   v4m_replace "__${prefix}IMAGE_REPO_3LEVEL__"  "$REGISTRY\/$REPOS\/$IMAGE" "$imageKeysFile"
+   v4m_replace "__${prefix}IMAGE_REPO_2LEVEL__"  "$REPOS\/$IMAGE"            "$imageKeysFile"
+   v4m_replace "__${prefix}IMAGE__"              "$IMAGE"                    "$imageKeysFile"
+   v4m_replace "__${prefix}IMAGE_TAG__"          "$VERSION"                  "$imageKeysFile"
+   v4m_replace "__${prefix}IMAGE_PULL_POLICY__"  "$v4m_pullPolicy"           "$imageKeysFile"
+   v4m_replace "__${prefix}IMAGE_PULL_SECRET__"  "$pullsecret_text"          "$imageKeysFile"       #Handle Charts Accepting a Single Image Pull Secret
+   v4m_replace "__${prefix}IMAGE_PULL_SECRETS__" "$pullsecrets_text"         "$imageKeysFile"       #Handle Charts Accepting Multiple Image Pull Secrets
+
+   return 0
 }
 
-export -f checkDefaultStorageClass
-export -f validateTenantID
-export -f validateNamespace
-export -f randomPassword
-export -f trap_add
-export -f errexit_msg
+
+export -f parseFullImage
+export -f v4m_replace
+export -f generateImageKeysFile
