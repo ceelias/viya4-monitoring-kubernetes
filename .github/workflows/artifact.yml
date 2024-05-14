@@ -1,5 +1,9 @@
 name: artifact
-on: pull_request
+# on: pull_request
+on:
+  push:
+    branches:
+      - stable
 jobs:
   build:
     # The type of runner that the job will run on
@@ -24,7 +28,8 @@ jobs:
       with:
         commit-message: Update artifact inventory
         branch: update-artifact-inventory
-        base: main
+        title: Update ARTIFACT_INVENTORY
+        base: stable
     # - name: Commit files # transfer the new html files back into the repository
     #   run: |
     #     # git config --local user.name "ceelias"
