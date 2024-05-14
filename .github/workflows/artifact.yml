@@ -24,6 +24,7 @@ jobs:
       with:
         commit-message: Update artifact inventory
         branch: update-artifact-inventory
+        base: main
     # - name: Commit files # transfer the new html files back into the repository
     #   run: |
     #     # git config --local user.name "ceelias"
