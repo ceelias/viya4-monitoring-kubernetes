@@ -182,6 +182,23 @@ function validateNamespace {
   fi
 }
 
+function parseFullImage {
+   fullImage="$1"
+   unset REGISTRY REPOS IMAGE VERSION FULL_IMAGE_ESCAPED
+
+   if [[ "$1" =~ (.*)\/(.*)\/(.*)\:(.*) ]]; then
+
+      REGISTRY="${BASH_REMATCH[1]}"
+      REPOS="${BASH_REMATCH[2]}"
+      IMAGE="${BASH_REMATCH[3]}"
+      VERSION="${BASH_REMATCH[4]}"
+      FULL_IMAGE_ESCAPED="$REGISTRY\/$REPOS\/$IMAGE\:$VERSION"
+      return 0
+   else
+      log_warn "Invalid value for full container image; does not fit expected pattern [$1]."
+      return 1
+   fi
+}
 function v4m_replace {
 
     if echo "$OSTYPE" | grep 'darwin' > /dev/null 2>&1; then
