@@ -13,7 +13,9 @@ jobs:
     # Runs commands using the runners shell
     - name: Run the generate script
       run: |
+        chmod +x ./github/workflows/artifact/generate_inventory.sh
         ./github/workflows/artifact/generate_inventory.sh
+      shell: bash
     - name: Commit files # transfer the new html files back into the repository
       run: |
         git config --local user.name "ceelias"
