@@ -17,7 +17,7 @@ CHECK_KUBERNETES=false
 source bin/common.sh
 
 file="ARTIFACT_INVENTORY.md"
-template="ARTIFACT_INVENTORY.template"
+template=".github/workflows/artifact/ARTIFACT_INVENTORY.template"
 
 cp "$template" "$file"
 
